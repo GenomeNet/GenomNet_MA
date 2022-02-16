@@ -1,32 +1,39 @@
 ## Introduction
-The provided framework enables the user to benchmark Neural Architecture Search (NAS) algorithms on genomic sequences, using the DeepSEA data. There is little research on how NAS algorithms perform on genomic sequences, because most of the algorithms are applied on image classification, object detection or semantic segmentation. Due to this lack of research, we investigate how state-of-the art NAS algorithms, such as DARTS, Progressive Differentiable Architecture Search (P-DARTS) and Bayesian Optimized NeuralArchitecture Search (BONAS) can be used to find high-performance deep learning architectures in the field of genomics. Our search space combines convolutional and recurrent layer because popular genome models such as DanQ or NCNet also used hybrid models, which consist of convolutional layers together with recurrent layers. These hybrid models showed superior performance compared to pure convolution neural network architectures. We implement new NAS approaches with a new search space which includes CNN and Recurrent Neural Network (RNN) operations. We call these algorithms genomeDARTS, genomeP-DARTS, and genomeBONAS. Furthermore, we build novel DARTS algorithms such as CWP-DARTS, which enables continuous weight sharing across different P-DARTS stages by transferring the neural network weights and architecture weights between P-DARTS iterations. In another P-DARTS extension,  we discard not only bad performing operations but also bad performing edges.  Additionally, we implement an algorithm, which we call OSP-NAS. OSP-NAS starts with a super-network model which includes all randomly sampled operations and edges and then gradually discard randomly sampled operations based on the validation accuracy of the remaining super-network. 
+
+The provided framework enables the user to benchmark Neural Architecture Search (NAS) algorithms on genomic sequences, using the DeepSEA data. There is little research on how NAS algorithms perform on genomic sequences, because most NAS algorithms are applied on image classification, object detection or semantic segmentation. Due to this lack of research, we investigate how state-of-the art NAS algorithms, such as DARTS, Progressive Differentiable Architecture Search (P-DARTS) and Bayesian Optimized Neural Architecture Search (BONAS) can be used to find high-performance deep learning architectures in the field of genomics. Our search space combines convolutional and recurrent layer in a novel way, because popular genome models such as DanQ or NCNet also use these hybrid models which showed superior performance compared to pure convolution neural network architectures. We call the algorithms using our new search space which includes CNN and Recurrent Neural Network (RNN) operations *genomeDARTS*, *genomeP-DARTS*, and *genomeBONAS*. Furthermore, we build novel DARTS algorithms such as *CWP-DARTS*, which enables continuous weight sharing across different P-DARTS stages by transferring the neural network weights and architecture weights between P-DARTS iterations. In another P-DARTS extension,  we discard not only bad performing operations but also bad performing edges, which we call *genomeDEP-DARTS*. Additionally, we implement a novel algorithm which we call *OSP-NAS*. OSP-NAS starts with a super-network model which includes all randomly sampled operations and edges and then gradually discard randomly sampled operations based on the validation accuracy of the remaining super-network. 
 
 
 ## Tested with
 
-- Python 3.6
 - Ubuntu 20.04
+- conda
+- Python 3.6
+
 - torch 1.7.1+cu101
 
+(see `requirements.txt` for more details)
+
 ## Setup
-```
-conda create --name genomeNAS python=3.6
 
-source activate genomeNAS
+1. Clone this repo and `cd` into it
 
-git clone https://github.com/ascheppach/GenomNet_MA.git
+2. run:
 
-cd GenomNet_MA
+    ```sh
+    conda create --name genomeNAS -c pytorch --file <( grep -v 'pypi_0$' requirements.txt)
 
-export PYTHONPATH="$PYTHONPATH:~/GenomNet_MA"
-```
+    conda activate genomeNAS
+
+    pip install -r  <( sed -n 's/=/==/; /pypi_0$/ s/=pypi_0$// p' requirements.txt )
+
+    export PYTHONPATH="$PYTHONPATH:$PWD"
+    ```
 
 ## Data
-To get the data for the predcion of noncoding variants please follow the instuctions of the DeepSea authors and download the data from their website.
+To get the data for the predcion of noncoding variants please follow the instuctions of the DeepSea authors and download the data from their website: http://deepsea.princeton.edu/media/code/deepsea_train_bundle.v0.9.tar.gz
 
 
 ## Run baseline Models
-
 Run following Code to run a LSTM based basline model such as DanQ. Of course, you have to adapt the path of your data.
 ```
 cd baseline_models
