@@ -29,136 +29,119 @@ The provided framework enables the user to benchmark Neural Architecture Search 
     export PYTHONPATH="$PYTHONPATH:$PWD"
     ```
 
-3. To get the data for the predcion of noncoding variants please follow the instuctions of the DeepSea authors and download the data from their website:
+3. To get the DeepSea data for the prediction of chromatin effects of noncoding variants, download the data (3644 MB) from their [website](http://deepsea.princeton.edu) into the `data/` folder (expect this to take a while!):
 
     ```sh
-    wget http://deepsea.princeton.edu/media/code/deepsea_train_bundle.v0.9.tar.gz
+    curl -L 'http://deepsea.princeton.edu/media/code/deepsea_train_bundle.v0.9.tar.gz' | tar xzv -C data
     ```
 
-
 ## Run baseline Models
-Run following Code to run a LSTM based basline model such as DanQ. Of course, you have to adapt the path of your data.
-```
-cd baseline_models
 
-mkdir deepsea
+These write the results into the folder `results/<model>`. See [baseline_models/README.md](baseline_models/README.md) for baseline references.
 
-python train_baseline.py --num_steps=3000 --seq_size=1000 --batch_size=100 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --epochs=50 --patience=40 --task='TF_bindings' --model='DeepSEA' --save='deepsea1' --save_dir=deepsea --model_path='deepsea/deepsea1.pth'```
-```
+### DeepSea Model
 
-```
-cd baseline_models
+```sh
+mkdir results/deepsea
 
-mkdir ncnet_brr
-
-python train_baseline.py --num_steps=3000 --seq_size=1000 --batch_size=100 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --epochs=50 --patience=40 --task='TF_bindings' --model='NCNet_bRR' --save='ncnet_brr1' --save_dir=ncnet_brr --model_path='ncnet_brr/ncnet_brr1.pth'
+python baseline_models/train_baseline.py --num_steps=3000 --seq_size=1000 --batch_size=100 --train_directory='data/deepsea_train/train.mat' --valid_directory='data/deepsea_train/valid.mat' --test_directory='data/deepsea_train/test.mat' --epochs=50 --patience=40 --task='TF_bindings' --model='DeepSEA' --save='deepsea1' --save_dir=results/deepsea --model_path='results/deepsea/deepsea1.pth'```
 ```
 
+### NCNet Models
+
+**NCNet_bRR**
+
+```sh
+mkdir results/ncnet_brr
+
+python baseline_models/train_baseline.py --num_steps=3000 --seq_size=1000 --batch_size=100 --train_directory='data/deepsea_train/train.mat' --valid_directory='data/deepsea_train/valid.mat' --test_directory='data/deepsea_train/test.mat' --epochs=50 --patience=40 --task='TF_bindings' --model='NCNet_bRR' --save='ncnet_brr1' --save_dir=results/ncnet_brr --model_path='results/ncnet_brr/ncnet_brr1.pth'
 ```
-cd baseline_models
 
-mkdir ncnet_rr
+**NCNet_RR**
 
-python train_baseline.py --num_steps=3000 --seq_size=1000 --batch_size=100 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --epochs=50 --patience=40 --task='TF_bindings' --model='NCNet_RR' --save='ncnet_rr1' --save_dir=ncnet_rr --model_path='ncnet_rr/ncnet_rr1.pth'
+```sh
+mkdir results/ncnet_rr
+
+python baseline_models/train_baseline.py --num_steps=3000 --seq_size=1000 --batch_size=100 --train_directory='data/deepsea_train/train.mat' --valid_directory='data/deepsea_train/valid.mat' --test_directory='data/deepsea_train/test.mat' --epochs=50 --patience=40 --task='TF_bindings' --model='NCNet_RR' --save='ncnet_rr1' --save_dir=ncnet_rr --model_path='results/ncnet_rr/ncnet_rr1.pth'
 ```
 
-```
-cd baseline_models
+### DanQ Model
 
-mkdir danq
+```sh
+mkdir results/danq
 
-python train_baseline.py --num_steps=3000 --seq_size=1000 --batch_size=100 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --epochs=50 --patience=40 --task='TF_bindings' --model='DanQ' --save='danq' --save_dir=danq --model_path='danq/danq1.pth'
+python baseline_models/train_baseline.py --num_steps=3000 --seq_size=1000 --batch_size=100 --train_directory='data/deepsea_train/train.mat' --valid_directory='data/deepsea_train/valid.mat' --test_directory='data/deepsea_train/test.mat' --epochs=50 --patience=40 --task='TF_bindings' --model='DanQ' --save='danq' --save_dir=results/danq --model_path='results/danq/danq1.pth'
 ```
 
 ## Run NAS algorithms for Genomics
-Befor running a genomeNAS algorithm the user has to create a folder where the results get stored.
+
+These run a genomeNAS algorithm and store them in `results/<method>`.
 
 ### genomeDARTS
+
 ```
-cd genomicNAS_Algorithms
+mkdir results/darts_search
 
-mkdir darts_search
-
-python train_genomicDARTS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --epochs=50 --task='TF_bindings' --save='darts_1' --save_dir=darts_search
+python train_genomicDARTS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --epochs=50 --task='TF_bindings' --save='darts_1' --save_dir=results/darts_search
 ```
 
 ### Hyperband-NAS
 
 ```
-cd genomicNAS_Algorithms
+mkdir results/hb_search
 
-mkdir hb_search
-
-python train_genomicHyperbandNAS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --epochs=20 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --budget=3 --num_samples=25 --iterations=3 --task='TF_bindings'  --save='hb_1' --save_dir=hb_search
+python train_genomicHyperbandNAS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --epochs=20 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --budget=3 --num_samples=25 --iterations=3 --task='TF_bindings'  --save='hb_1' --save_dir=results/hb_search
 ```
 
 ### genomeP-DARTS
 
 ```
-cd genomicNAS_Algorithms
+mkdir results/pdarts_search
 
-mkdir pdarts_search
-
-python train_genomicPDARTS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --epochs=25 --task='TF_bindings' --save='pdarts_1' --save_dir=pdarts_search
-```
-
-### genomeOSP-NAS
-
-```
-cd genomicNAS_Algorithms
-
-mkdir osp_search
-
-python train_genomicOSP_NAS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --epochs=60 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --budget=5 --pretrain_epochs=10 --num_init_archs=108 --num_ops=7 --task='TF_bindings' --save='osp_1' --save_dir=osp_search
+python train_genomicPDARTS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --epochs=25 --task='TF_bindings' --save='pdarts_1' --save_dir=results/pdarts_search
 ```
 
 ### Random search
 
 ```
-cd genomicNAS_Algorithms
+mkdir results/random_search
 
-mkdir random_search
+python train_genomicRandom.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --num_samples=20 --epochs=7 --task='TF_bindings' --save='random_1' --save_dir=results/random_search
 
-python train_genomicRandom.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --num_samples=20 --epochs=7 --task='TF_bindings' --save='random_1' --save_dir=random_search
+```
 
+### genomeBONAS
+
+```
+mkdir results/bonas_search
+
+python train_genomicBONAS.py --num_steps=2000 --seq_size=1000  --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25  --super_batch_size=64 --sub_batch_size=128 --generate_num=1000 --bo_sample_num=60 --epochs=60 --train_supernet_epochs=15 --iterations=2 --gcn_epochs=100 --sample_method='ea' --task='TF_bindings' --save='bonas_1' --save_dir=results/bonas_search
 ```
 
 ### genomeCWP-DARTS
 
 ```
-cd genomicNAS_Algorithms
+mkdir results/cwp_search
 
-mkdir cwp_search
-
-python train_genomicCWP_DARTS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --task='TF_bindings' --save='cwp_1' --save_dir=cwp_search
+python train_genomicCWP_DARTS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --task='TF_bindings' --save='cwp_1' --save_dir=results/cwp_search
 ```
 
 ### genomeDEP-DARTS
 
 ```
-cd genomicNAS_Algorithms
+mkdir results/dep_search
 
-mkdir dep_search
-
-python train_genomicDEP_DARTS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --task='TF_bindings' --save='dep_1' --save_dir=dep_search
+python train_genomicDEP_DARTS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --task='TF_bindings' --save='dep_1' --save_dir=results/dep_search
 ```
 
-### genomeBONAS
-
+### genomeOSP-NAS
 
 ```
-mkdir trained_results
+mkdir results/osp_search
 
-cd trained_results 
-
-mkdir bonas_1
-
-cd genomicNAS_Algorithms
-
-mkdir bonas_search
-
-python train_genomicBONAS.py --num_steps=2000 --seq_size=1000  --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25  --super_batch_size=64 --sub_batch_size=128 --generate_num=1000 --bo_sample_num=60 --epochs=60 --train_supernet_epochs=15 --iterations=2 --gcn_epochs=100 --sample_method='ea' --task='TF_bindings' --save='bonas_1' --save_dir=bonas_search
+python train_genomicOSP_NAS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --epochs=60 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --budget=5 --pretrain_epochs=10 --num_init_archs=108 --num_ops=7 --task='TF_bindings' --save='osp_1' --save_dir=results/osp_search
 ```
+
 
 ## Train and validate final Architectures
 
@@ -183,3 +166,18 @@ python test_finalArchitecture.py --seq_size=1000 --batch_size=100 --train_direct
 
 ```
 
+
+# Folders
+
+* `BO_tools`:
+* `BONAS_search_space`:
+* `darts_tools`:
+* `data_generators`:
+* `genomicNAS_Algorithms`:
+* `predictors`:
+* `randomSearch_and_Hyperband_Tools`:
+* `samplers`:
+* `opendomain_utils`:
+* `preliminary_study_results`:
+* `data`: Directory where the DeepSea-data should be downloaded into.
+* `results`:

@@ -86,7 +86,7 @@ def Train(model, train_loader, optimizer, criterion, device, num_steps, task):
         labels.append(label.detach().cpu().numpy())
         if task == "next_character_prediction":
             predictions.append(scores(logits).detach().cpu().numpy())
-        else:#if args.task == "TF_bindings"::
+        else:#if args.task == "TF_bindings":
             predictions.append(logits.detach().cpu().numpy())
 
         loss.backward()

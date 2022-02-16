@@ -112,7 +112,7 @@ def Train(model, train_loader, optimizer, criterion, device, num_steps, task):
         labels.append(label.detach().cpu().numpy())
         if task == "next_character_prediction":
             predictions.append(scores(logits).detach().cpu().numpy())
-        else:#if args.task == "TF_bindings"::
+        else:#if args.task == "TF_bindings":
             predictions.append(logits.detach().cpu().numpy())
 
         loss.backward()
@@ -168,7 +168,7 @@ def Valid(model, valid_loader, optimizer, criterion, device, num_steps, task):
             loss = criterion(logits, label)
             
             l1 = 0
-            # parameters3 = []
+
             for name, params in model.named_parameters():
                 if 'fc2.weight' in name:
              
@@ -221,7 +221,7 @@ def Test(model, test_queue, optimizer, criterion, device, num_steps, task):
             loss = criterion(logits, label)
             
             l1 = 0
-            # parameters3 = []
+
             for name, params in model.named_parameters():
                 if 'fc2.weight' in name:
              

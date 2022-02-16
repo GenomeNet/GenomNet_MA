@@ -28,18 +28,10 @@ import math
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
-
-#trained_pickle_file = '/home/amadeu/Downloads/AMBER-ModelZoo-20211011T133426Z-001/AMBER-ModelZoo/AMBER-Seq.DeepSEA919/hist.pkl'
-#import pickle
-#with open(trained_pickle_file, 'rb') as f:
-#    trained_list = pickle.load(f)
-
-
 # 8 bottleneck block
 # each bottleneck block consists of 3 convlayers, and the first and last one is always with kernelsize=1 and
 
-# da wir jetzt mehrere blocks haben, macht es schon Sinn, die channels step-wise zu erhöhen
+# since we have multiple blocks, it makes sense to increase channels in every step
 
 def conv_15(in_channels, out_channels, kernel_size=15, stride=1, padding=12): #
     return nn.Conv1d(in_channels, out_channels, kernel_size, 
@@ -52,24 +44,18 @@ def conv_1(in_channels, out_channels, kernel_size=1, stride=1, padding=0): #
 # 1000-1
 
 class IdentityBlock(nn.Module): 
-    # input 160: 40, 160 (input am anfang 160 und am Ende wieder 160, müssen also kein projektion block machen) ; dazwischen wurde auf 40 rezudiert und mit mit dieser channelsize conv ausgeführt
-    # input 160: 40, 160 (input am anfang 160 und am Ende wieder 160, müssen also kein projektion block machen) ; dazwischen wurde auf 40 rezudiert und mit mit dieser channelsize conv ausgeführt
-    # input 160: 40, 160 (input am anfang 160 und am Ende wieder 160, müssen also kein projektion block machen) ; dazwischen wurde auf 40 rezudiert und mit mit dieser channelsize conv ausgeführt
-    # input 160: 40, 160 (input am anfang 160 und am Ende wieder 160, müssen also kein projektion block machen) ; dazwischen wurde auf 40 rezudiert und mit mit dieser channelsize conv ausgeführt
-    
-    # input 160: 80, 320 (input am anfang 160 und am Ende aber 320, müssen also jetzt projektion block machen !!!) !!!!  ; dazwischen wurde auf 80 rezudiert und mit mit dieser channelsize conv ausgeführt
-    # input 320: 80, 320 (input am anfang 320 und am Ende wieder 320, müssen also kein projektion block machen) ; dazwischen wurde auf 80 rezudiert und mit mit dieser channelsize conv ausgeführt
-    # input 320: 80, 320 (input am anfang 320 und am Ende wieder 320, müssen also kein projektion block machen) ; dazwischen wurde auf 80 rezudiert und mit mit dieser channelsize conv ausgeführt
-    # input 320: 80, 320 (input am anfang 320 und am Ende wieder 320, müssen also kein projektion block machen) ; dazwischen wurde auf 80 rezudiert und mit mit dieser channelsize conv ausgeführt
+    # input 160: 40, 160 (input is 160 both at beginning and end, so no projection block) ; reduce to 40 in between, done through channelsize conv
+    # input 160: 80, 320 (input is 160 in beginning, 320 at the end, so we need projection block !!!) !!!!  ; reduce to 80  in between, done with channelsize conv
+    # input 320: 80, 320 (input is 320 both at beginning and end, so no projection block) ; reduce to 80 in between, done through channelsize conv
     def __init__(self, in_channels, reduced_channels, expanded_channels, identity = False, stride=1):
         super(IdentityBlock, self).__init__()
         self.identity = identity
-        self.conv1 = conv_1(in_channels, reduced_channels, 1, 1, 0) # von 160 auf 80 reduziert
+        self.conv1 = conv_1(in_channels, reduced_channels, 1, 1, 0) # from 160 reduce to 80
         self.bn1 = nn.BatchNorm1d(reduced_channels)
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = conv_15(reduced_channels, reduced_channels, 15, 1, 7) # bleibt 80 
+        self.conv2 = conv_15(reduced_channels, reduced_channels, 15, 1, 7) # remains 80 
         self.bn2 = nn.BatchNorm1d(reduced_channels)
-        self.conv3 = conv_1(reduced_channels, expanded_channels, 1, 1, 0) # von 80 auf 320 (aber residual eben noch nicht)
+        self.conv3 = conv_1(reduced_channels, expanded_channels, 1, 1, 0) # from 80 up to 320 (just not residual)
         self.bn3 = nn.BatchNorm1d(expanded_channels)
         
         if (self.identity == False): 
@@ -90,10 +76,10 @@ class IdentityBlock(nn.Module):
         x = self.conv3(x)
        
         x = self.bn3(x)
-#        print(x.shape)
+
         if (self.identity == False):
             residual = self.shortcut(residual)
-#        print(residual.shape)
+
         x += residual
         x = self.relu(x)
       
@@ -104,16 +90,16 @@ class ProjectionBlock(nn.Module): #
     def __init__(self, in_channels, reduced_channels, expanded_channels): # 40, 160
         super(ProjectionBlock, self).__init__()
         self.conv1 = conv_1(in_channels, reduced_channels, stride=2)
-        # self.conv1 = conv_1(in_channels, reduced_channels, 1, 1, 0)
+
         
         self.bn1 = nn.BatchNorm1d(reduced_channels)
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv_15(reduced_channels, reduced_channels, stride = 1)
-        # self.conv2 = conv_15(reduced_channels, reduced_channels, 15, 1, 7)
+
 
         self.bn2 = nn.BatchNorm1d(reduced_channels)
         self.conv3 = conv_1(reduced_channels, expanded_channels, stride=1)
-        # self.conv3 = conv_1(reduced_channels, expanded_channels, 1, 1, 0)
+
 
         self.bn3 = nn.BatchNorm1d(expanded_channels)
         self.shortcut = nn.Sequential(
@@ -154,8 +140,7 @@ class NCNet_bRR(nn.Module):
         self.seq_size = seq_size
 
         self.relu = nn.ReLU(inplace=True)
-        # self.layer1 = self.connect_blocks(id_block, pr_block, 16, 8, 32, num_blocks[0])# 
-        # self.layer2 = self.connect_blocks(id_block, pr_block, 32, 16, 64, num_blocks[0])
+
         self.bottleneck1 = id_block(160, 40, 160, identity = True)
         self.bottleneck2 = id_block(160, 40, 160, identity = True)
         
@@ -184,7 +169,7 @@ class NCNet_bRR(nn.Module):
         self.num_neurons = math.floor(aux_num)
 
         self.dropout_2 = nn.Dropout(p=0.5)
-        self.fc1 = nn.Linear(320*2*self.num_neurons, 925) # seq_len 1000 75neuronen; seq_len 150 35neuronen
+        self.fc1 = nn.Linear(320*2*self.num_neurons, 925) # seq_len 1000 75 units; seq_len 150 35 units
         self.fc2 = nn.Linear(925, num_classes)
         
         if task == "TF_bindings":
@@ -243,10 +228,9 @@ class NCNet_bRR(nn.Module):
         x = self.dropout(x)
         
         h_0, c_0 = self.zero_state(batch_size)
-        # print(x.shape) # [2,320,75]
+        # x.shape: [2,320,75]
 
         
-        # x = torch.transpose(x, 1, 2)
         x = x.permute(2,0,1)
 
         #CNN expects [batchsize, input_channels, signal_length]
@@ -256,16 +240,12 @@ class NCNet_bRR(nn.Module):
 
         output, state = self.lstm(x, (h_0, c_0))
         
-        # print(x.shape) # [75,2,320]
+        # x.shape: [75,2,320]
         x = output.permute(1,0,2)
-        # print(x.shape) # [2,75,640]
+        # x.shape: [2,75,640]
         
         x = torch.flatten(x, start_dim= 1) 
         x = self.dropout_2(x)
-
-
-        #x = torch.reshape(output, (self.batch_size,self.num_neurons*self.num_motifs)) # seqlen=1000 75 neuronen; seq_len=150 35 neuronen
-        #x = torch.flatten(x,1)
 
         x = self.fc1(x)
       

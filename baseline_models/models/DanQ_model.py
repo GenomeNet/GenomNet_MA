@@ -64,9 +64,6 @@ class NN_class(nn.Module):
         else:
             
             self.final = nn.Identity()
-            
-        # x = final(x)
-        # self.fc2 = nn.Linear(925, num_classes)
 
     
     def zero_state(self, batch_size):
@@ -86,33 +83,24 @@ class NN_class(nn.Module):
         x = self.dropout(x)
         
         h_0, c_0 = self.zero_state(batch_size)
-        #print(x.shape) # [2,320,75]
+        # x.shape: [2,320,75]
 
         
-        # x = torch.transpose(x, 1, 2)
         x = x.permute(2,0,1)
 
 
         #CNN expects [batchsize, input_channels, signal_length]
         # lstm expects shape [batchsize, signal_length, number of features]
-        # print(x.shape)
-        #print(prev_state.shape)
 
              
         output, state = self.lstm(x, (h_0, c_0))
         
-        # x = torch.transpose(x, 1, 2)
-        #print(x.shape) # [75,2,320]
+        # x.shape: [75,2,320]
         x = output.permute(1,0,2)
-        #print(x.shape) # [2,75,640]
+        # x.shape: [2,75,640]
         
         x = torch.flatten(x, start_dim= 1) 
         x = self.dropout_2(x)
-
-
-        #x = torch.reshape(output, (self.batch_size,self.num_neurons*self.num_motifs)) # seqlen=1000 75 neuronen; seq_len=150 35 neuronen
-        #x = torch.flatten(x,1)
-
       
         x = self.fc1(x)
       
@@ -123,26 +111,6 @@ class NN_class(nn.Module):
         x = self.final(x)
         
         return x #, state
-    
-    
-
-
-#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-#model = DanQ(num_classes, num_motifs, batch_size).to(device)
-#model = DanQ()
-
-#criterion = nn.CrossEntropyLoss()
-#optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
-
-
-
-#from modelsummary import summary
-#model = DanQ(num_classes=4,num_motifs=6)
-#x=torch.zeros((2,4,10))
-#state_h = torch.zeros((1,2,6))# für jeden b
-#state_c = torch.zeros((1,2,6))
-#prev_state = state_h, state_c
-#print(summary(model, x, prev_state, show_input=False)) # other output shapes than keras summary, as we receive lstm hiddenstate output instead of lstm output
 
 
 

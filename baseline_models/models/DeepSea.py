@@ -74,14 +74,12 @@ class NN_class(nn.Module):
         
     def forward(self, x):
        
-        #print(x.shape)
-        x = self.layer1(x)# results in 91 neurons and 6 channels
+
+        x = self.layer1(x)  # results in 91 neurons and 6 channels
       
-        #print(x.shape)
         x = self.layer2(x)
-        # print(x.shape)
        
-        x = self.layer3(x) #
+        x = self.layer3(x)
                 
         x = torch.flatten(x, start_dim= 1) 
         
@@ -92,7 +90,5 @@ class NN_class(nn.Module):
         
         x = self.fc2(x)
         x = self.final(x)
-        #print(x)
-        #print(x.shape)
-        
+
         return x

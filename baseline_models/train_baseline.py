@@ -52,62 +52,48 @@ import matplotlib.pyplot as plt
 
 # from pytorchtools import EarlyStopping
 
-
-
-
 parser = argparse.ArgumentParser("train_baseline")
-parser.add_argument('--data', type=str, default='/home/amadeu/anaconda3/envs/darts_env/cnn/data2/trainset.txt', help='location of the data corpus')
-parser.add_argument('--batch_size', type=int, default=2, help='batch size') # 100
-parser.add_argument('--seq_size', type=int, default=1000, help='sequence size') # 200 oder 1000
+parser.add_argument('--batch_size', type=int, default=100, help='batch size')
+parser.add_argument('--seq_size', type=int, default=1000, help='input sequence size') # 200 or 1000
 parser.add_argument('--learning_rate', type=float, default=0.001, help='init learning rate') # default RMSprob
 parser.add_argument('--epochs', type=int, default=10, help='num of training epochs') # min 60 but until convergence
 # parser.add_argument('--test_epochs', type=int, default=1, help='num of testing epochs')
 
-# parser.add_argument('--num_classes', type=int, default=4, help='num of target classes')
-parser.add_argument('--task', type=str, default='TF_bindings', help='defines the task')#TF_bindings
-parser.add_argument('--num_steps', type=int, default=2, help='number of iterations per epoch')
-# parser.add_argument('--test_num_steps', type=int, default=2, help='number of iterations per testing epoch')
+parser.add_argument('--task', type=str, default='TF_bindings', help='defines the task: next_character_prediction (not fully implemented!) or TF_bindings (default)')
+parser.add_argument('--num_steps', type=int, default=2000, help='number of iterations per epoch')
 
-parser.add_argument('--valid_directory', type=str, default='/home/amadeu/Downloads/genomicData/validation', help='directory of validation data')
-parser.add_argument('--train_directory', type=str, default='/home/amadeu/Downloads/genomicData/train', help='directory of training data')
-parser.add_argument('--test_directory', type=str, default='/home/amadeu/Downloads/genomicData/test', help='directory of test data')
+parser.add_argument('--valid_directory', type=str, default='data/deepsea_train/valid.mat', help='file (TF_bindings) or directory (next_character_prediction) of validation data')
+parser.add_argument('--train_directory', type=str, default='data/deepsea_train/train.mat', help='file (TF_bindings) or directory (next_character_prediction) of training data')
+parser.add_argument('--test_directory', type=str, default='data/deepsea_train/test.mat', help='file (TF_bindings) or directory (next_character_prediction) of test data')
 
 parser.add_argument('--num_files', type=int, default=3, help='number of files for training data')
-parser.add_argument('--next_character_prediction', type=bool, default=True, help='task of model')
-parser.add_argument('--note', type=str, default='try', help='note for this run')
-
-parser.add_argument('--train_input_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/inputs_small.pkl', help='directory of train input data')
-parser.add_argument('--train_target_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/targets_small.pkl', help='directory of train target data')
-parser.add_argument('--valid_input_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/inputs_small_val.pkl', help='directory of validation input data')
-parser.add_argument('--valid_target_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/targets_small_val.pkl', help='directory of validation target data')
-parser.add_argument('--test_input_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/inputs_small_test.pkl', help='directory of test input data')
-parser.add_argument('--test_target_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/targets_small_test.pkl', help='directory of test target data')
+parser.add_argument('--next_character_predict_character', dest='next_character_prediction', action='store_true', help='only for --task=next_character_prediction: predict single character')
+parser.add_argument('--next_character_predict_sequence', dest='next_character_prediction', action='store_false', help='only for --task=next_character_prediction: predict entire sequence, shifted by one character, using causal convolutions')
+parser.set_defaults(next_character_prediction=True)
 
 # parser.add_argument('--num_motifs', type=int, default=100, help='number of channels') # 320
-parser.add_argument('--model', type=str, default='DeepSEA', help='path to save the model')
-parser.add_argument('--save', type=str,  default='bas',
-                    help='name to save the labels and predicitons')
-parser.add_argument('--save_dir', type=str,  default='test_danQ',
+parser.add_argument('--model', type=str, required=True, help='Model to use; one of: DanQ, DeepSEA (note case sensitive), NCNet_RR, NCNet_bRR')
+parser.add_argument('--save', type=str, required=True,
+                    help='file name postfix to save the labels and predicitons')
+parser.add_argument('--save_dir', type=str, required=True,
                     help='path to save the labels and predicitons')
-parser.add_argument('--model_path', type=str,  default='test_danQ/danQ_net.pth',
+parser.add_argument('--model_path', type=str, required=True,
                     help='path to save the trained model')
-parser.add_argument('--seed', type=int, default=2, help='random seed')
-parser.add_argument('--grad_clip', type=float, default=5, help='gradient clipping')
-parser.add_argument('--report_validation', type=int, default=1, help='validation report frequency')
-parser.add_argument('--improv', type=float, default=0, help='minimum change to define an improvement')
-parser.add_argument('--patience', type=int, default=5, help='how many epochs with no improvement after which training will be stopped')
+
+parser.add_argument('--report_validation', type=int, default=1, help='validation report period; default 1 (every epoch)')
+parser.add_argument('--improv', type=float, default=0, help='minimum change to define an improvement for early stopping; default 0')
+parser.add_argument('--patience', type=int, default=0, help='how many epochs with no improvement after which training will be stopped; default 0: disabled.')
 args = parser.parse_args()
 
 
-#args.save = '{}search-{}-{}'.format(args.save, args.note, time.strftime("%Y%m%d-%H%M%S"))
-utils.create_exp_dir(args.save, scripts_to_save=glob.glob('*.py'))
+utils.create_exp_dir(args.save)
 
 log_format = '%(asctime)s %(message)s'
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
     format=log_format, datefmt='%m/%d %I:%M:%S %p')
 fh = logging.FileHandler(os.path.join(args.save, 'log.txt'))
 fh.setFormatter(logging.Formatter(log_format))
-#logging.getLogger().addHandler(fh)
+logging.getLogger().addHandler(fh)
 
 logging = logging.getLogger(__name__)
 
@@ -115,9 +101,6 @@ logging = logging.getLogger(__name__)
 def main():
   
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-  
-  # criterion = nn.BCELoss()
-  
   
   if (args.task == "next_character_prediction"):
       
@@ -154,7 +137,6 @@ def main():
       
       import generalNAS_tools.data_preprocessing_TF as dp
         
-#      train_queue, valid_queue, test_queue = dp.data_preprocessing(args.train_input_directory, args.valid_input_directory, args.test_input_directory, args.train_target_directory, args.valid_target_directory, args.test_target_directory, args.batch_size)
       train_queue, valid_queue, test_queue = dp.data_preprocessing(args.train_directory, args.valid_directory, args.test_directory, args.batch_size)
 
       num_classes = 919
@@ -165,8 +147,7 @@ def main():
           
           import baseline_models.models.DanQ_model as model
           model = model.NN_class(num_classes, args.batch_size, args.seq_size, args.task).to(device)
-          #import baseline_models.models.DanQ_original as model
-          #model = model.DanQ(args.seq_size, num_classes).to(device)
+
           from baseline_models.tain_and_val_baseline import Train, Valid, Test
 
 
@@ -238,7 +219,7 @@ def main():
   pytorch_total_params = sum(p.numel() for p in model.parameters()) 
 
   
-  # pytorch_total_params = sum(p.numel() for p in model.parameters()) # 46mio bei danQ; 57mi bei NCNet_RR; 38 mio bei DARTS oneshot model; 22mio bei final archs
+  # pytorch_total_params = sum(p.numel() for p in model.parameters()) # 46e6 with danQ; 57e6 with NCNet_RR; 38e6 with DARTS oneshot model; 22e6 with final archs
   
   # mem_params = sum([param.nelement()*param.element_size() for param in model.parameters()])
   # mem_bufs = sum([buf.nelement()*buf.element_size() for buf in model.buffers()])
@@ -250,23 +231,21 @@ def main():
   # for name, p in model.named_parameters():
   #    params.append(p)
   #    names.append(name)
-  #    numels.append(p.numel()) # 10tes element ist am höchsten und ist fc nach lstm: hat nämlich shape [925,48000] und p.numel davon ist 925*48000(weil 640*75=48.000)= 44.400.000; und diese dinger werden dann eben aufsummiert (bei train_finalArchs sind es 22 mio, weil 925*21504(weil 512*42=21504))=19.891.200
+  #    numels.append(p.numel()) # 10th element is highest und fc after lstm, because it has shape [925,48000] and p.numel for this is 925*48000(since 640*75=48.000)= 44.400.000; these are summed up (with train_finalArchs these are 22e6, since 925*21504(weil 512*42=21504))=19.891.200
       
 
 
   for epoch in range(args.epochs):
-      # epoch=0
       
       train_start = time.strftime("%Y%m%d-%H%M")
       epoch_start = time.time()
 
-      # train_loss, acc_train_epoch = Train(model, train_queue, optimizer, criterion, device, args.num_steps, args.report_freq)
       labels, predictions, train_loss = Train(model, train_queue, optimizer, criterion, device, args.num_steps, args.task)
 
       labels = np.concatenate(labels)
       predictions = np.concatenate(predictions)
       
-      if args.task == ('next_character_prediction'):
+      if args.task == 'next_character_prediction':
           acc = overall_acc(labels, predictions, args.task)
           
           logging.info('| epoch {:3d} | train acc {:5.2f}'.format(epoch, acc))
@@ -278,8 +257,6 @@ def main():
           logging.info('| epoch {:3d} | train f1-score {:5.4f}'.format(epoch, f1))
           train_acc.append(f1)
           
-      # np.argmax(predictions, axis=1)
-      # np.round(predictions)
 
       #all_predictions_train.append(predictions)
       train_losses.append(train_loss)
@@ -332,7 +309,7 @@ def main():
           #        cnt += 1
           #    print(cnt)
                   
-          if cnt == args.patience:
+          if args.patience and cnt == args.patience:
               
               break
             

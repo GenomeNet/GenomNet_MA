@@ -26,19 +26,19 @@ from torch.utils.data import Dataset,DataLoader
 
 import math
 
-# 2 rr_blocks
-# jeder rr_block: conv1d, bn, relu, conv1d, bn
-# rest wie bei danQ (also num_motifs, letzter fc layer etc., loss-function)
-# bei residual_block immer padding verwenden, damit anzahl neuronen gleicht bleibt (im orginal braucht er padding 1 für conv3x3, damit neuronen gleich bleiben); nur falls channel_size nicht gleich ist, dann shortcut verwenden
-# nur durch stride wird ggf. gedownsampled
+# * 2 rr_blocks
+# * every rr_block: conv1d, bn, relu, conv1d, bn
+# * rest as in danQ (i.e. num_motifs, last fc layer etc., loss-function)
+# * for residual_block always use padding, so number of units stays the same (original model needs padding of 1 for conv3x3, so number of units stays the same); whenever channel_size changes, use shortcut
+# * stride can do downsampling
 
-# da wir nur 2 Residualblocks haben, macht es Sinn erstmal durch conv channelsize auf 320 bringen und dann 2 Residualblocks (außerdem mach er bei ResNet auch vor den blocks erstmal convlayer)
-# in den Residualblocks kein downsampling machen, weil er ja schreibt, dass der Rest gleich ist wie bei DanQ (und hier macht er downsampling durch max-pooling mit stride=13)
-# normalerweise macht er bei Projection-block immer shortcut mit 1x1 conv umd channelsize zu erhöhen, aber er macht auch immer downsampling mit stride=2, weil auch erster conv layer vom normalen layer stride=2 hat;
-# wir machen aber ohne stride=2, weil wir rest wie in DanQ haben wollen und nur durch maxpooling downsamplen
+# * Since we only have 2 residual blocks, we bring conv channel size to 320 first and follow with residual blocks. This is as in ResNet where a conv layer comes before residual blocks as well.)
+# * No down sampling in Residualblocks, since as described, the rest should be as in DanQ (where downsampling happens through max-pooling with stride=13)
+# * the Projection-block would usually always use shortcut with 1x1 conv to increase channel size,  but at the same time it would do downsamplen with stride=2, since first conv layer of normalen layer has stride=2 as well;
+#   in contrast, we do not have stride=2, since as in DanQ we only want to downsample through maxpooling
 
 
-### ResidualBlock definieren ###
+### Define ResidualBlock ###
 def conv_26(in_channels, out_channels, kernel_size=26, stride=1, padding=12): # 
     return nn.Conv1d(in_channels, out_channels, kernel_size, 
                     stride, padding)
@@ -98,8 +98,6 @@ class NCNet_RR(nn.Module):
         
         self.block2 = self.ResidualBlock(self.num_motifs, self.num_motifs, identity = True)
 
-        # self.block1 = self.connect_blocks(rr_block, 16, 32, num_blocks[0])
-        # self.block2 = self.connect_blocks(rr_block, 32, 64, num_blocks[0], 2)      
       
         self.maxpool = nn.MaxPool1d(kernel_size = 13, stride = 13) # seq_len=1000 kernel_size= 13 stride=13; seq_len=150 kernelsize=4 stride=4
         self.dropout = nn.Dropout(p=0.2)
@@ -138,20 +136,18 @@ class NCNet_RR(nn.Module):
     def forward(self, x, batch_size):
         
         x = self.conv1d(x)
-        #print('out') #wegen padding = 1 bleibt output gleich 10 Neuronen
-        #print(x.shape)
+        #print('out') #with padding = 1 output remains 10 units
+
         x = self.bn(x)
         
         x = self.relu(x)
-        #print('bn') # bn bleibt von den dimensionen eh gleich
-        #print(x.shape)
+        #print('bn') # bn dimension stays constant
+
         x = self.block1(x)
         x = self.relu(x)
-        #print('layer1') 
-        #print(x.shape)
+
         x = self.block2(x)
-        #print('layer2')
-        #print(x.shape)
+
       
         x = self.relu(x)
        
@@ -160,29 +156,23 @@ class NCNet_RR(nn.Module):
         x = self.dropout(x)
         
         h_0, c_0 = self.zero_state(batch_size)
-        # print(x.shape) # [2,320,75]
+        # x.shape: [2,320,75]
 
         
-        # x = torch.transpose(x, 1, 2)
         x = x.permute(2,0,1)
 
         #CNN expects [batchsize, input_channels, signal_length]
         # lstm expects shape [batchsize, signal_length, number of features]
-        # print(x.shape)
-        #print(prev_state.shape)
 
         output, state = self.lstm(x, (h_0, c_0))
         
-        # print(x.shape) # [75,2,320]
+        # x.shape: [75,2,320]
         x = output.permute(1,0,2)
-        # print(x.shape) # [2,75,640]
+        # x.shape: [2,75,640]
         
         x = torch.flatten(x, start_dim= 1) 
         
         x = self.dropout_2(x)
-
-        #x = torch.reshape(output, (self.batch_size,self.num_neurons*self.num_motifs)) # seqlen=1000 75 neuronen; seq_len=150 35 neuronen
-        #x = torch.flatten(x,1)
 
         x = self.fc1(x)
       
@@ -197,12 +187,4 @@ class NCNet_RR(nn.Module):
     def zero_state(self, batch_size):
         return (torch.zeros(2, batch_size, self.num_motifs).to(device),
                torch.zeros(2, batch_size, self.num_motifs).to(device))
-
-
-# rr_block, seq_size, num_classes, num_motifs, batch_size
-
-
-
-# criterion = nn.CrossEntropyLoss()
-# optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
 

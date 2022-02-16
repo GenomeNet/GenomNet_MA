@@ -36,9 +36,9 @@ class NN_class(nn.Module):
     def __init__(self, num_classes, num_motifs, batch_size):
         super(NN_class,self).__init__()
         
-        self.conv1d = nn.Conv1d(4,num_motifs,kernel_size=10) # mit 150er sequenz; kernel=10; mit 10er sequenz und kernel3
+        self.conv1d = nn.Conv1d(4,num_motifs,kernel_size=10) # with sequence length 150; kernel=10; with sequence length 10 and kernel=3
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool1d(kernel_size = 2) # neuronen=141; 8
+        self.maxpool = nn.MaxPool1d(kernel_size = 2) # units=141; 8
         self.dropout = nn.Dropout(p=0.1)
         self.fc1 = nn.Linear(num_motifs*70,num_motifs)   #  141/2 ; 4
         self.fc2 = nn.Linear(num_motifs,num_classes)
@@ -46,7 +46,7 @@ class NN_class(nn.Module):
     def forward(self, x):
        
         #print(x.shape)
-        x = self.conv1d(x)# results in 91 neurons and 6 channels
+        x = self.conv1d(x)# results in 91 units and 6 channels
       
         #print(x.shape)
         x = self.relu(x)
