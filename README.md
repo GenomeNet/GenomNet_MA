@@ -17,7 +17,7 @@ The provided framework enables the user to benchmark Neural Architecture Search 
 
 1. Clone this repo and `cd` into it
 
-2. run:
+2. Set up the python environment, using `conda`, which you get e.g. by installing [Miniconda](https://docs.conda.io/en/latest/miniconda.html):
 
     ```sh
     conda create --name genomeNAS -c pytorch --file <( grep -v 'pypi_0$' requirements.txt)
@@ -29,8 +29,11 @@ The provided framework enables the user to benchmark Neural Architecture Search 
     export PYTHONPATH="$PYTHONPATH:$PWD"
     ```
 
-## Data
-To get the data for the predcion of noncoding variants please follow the instuctions of the DeepSea authors and download the data from their website: http://deepsea.princeton.edu/media/code/deepsea_train_bundle.v0.9.tar.gz
+3. To get the data for the predcion of noncoding variants please follow the instuctions of the DeepSea authors and download the data from their website:
+
+    ```sh
+    wget http://deepsea.princeton.edu/media/code/deepsea_train_bundle.v0.9.tar.gz
+    ```
 
 
 ## Run baseline Models
