@@ -49,93 +49,65 @@ from generalNAS_tools.utils import scores_perClass, scores_Overall, pr_aucPerCla
 
 
 parser = argparse.ArgumentParser(description='DARTS for genomic Data')
-parser.add_argument('--data', type=str, default='/home/amadeu/anaconda3/envs/darts_env/cnn/data2/trainset.txt', help='location of the data corpus')
 parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
 parser.add_argument('--cnn_lr', type=float, default=0.025, help='learning rate for CNN part')
 parser.add_argument('--cnn_weight_decay', type=float, default=3e-4, help='weight decay for CNN part')
-parser.add_argument('--rhn_lr', type=float, default=2, help='learning rate for CNN part')
+parser.add_argument('--rhn_lr', type=float, default=2, help='learning rate for RHN part')
 parser.add_argument('--rhn_weight_decay', type=float, default=5e-7, help='weight decay for RHN part')
-
-parser.add_argument('--num_steps', type=int, default=2, help='number of iterations per epoch')
-parser.add_argument('--train_directory', type=str, default='/home/amadeu/Downloads/genomicData/train', help='directory of training data')
-parser.add_argument('--valid_directory', type=str, default='/home/amadeu/Downloads/genomicData/validation', help='directory of validation data')
-parser.add_argument('--test_directory', type=str, default='/home/amadeu/Downloads/genomicData/test', help='directory of test data')
-
-parser.add_argument('--train_input_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/inputs_small.pkl', help='directory of train data')
-parser.add_argument('--train_target_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/targets_small.pkl', help='directory of train data')
-parser.add_argument('--valid_input_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/inputs_small_val.pkl', help='directory of validation data')
-parser.add_argument('--valid_target_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/targets_small_val.pkl', help='directory of validation data')
-parser.add_argument('--test_input_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/inputs_small_test.pkl', help='directory of test data')
-parser.add_argument('--test_target_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/targets_small_test.pkl', help='directory of test data')
-
-parser.add_argument('--task', type=str, default='TF_bindings', help='defines the task')#TF_bindings
-
-parser.add_argument('--validation', type=bool, default=True)
-parser.add_argument('--report_validation', type=int, default=2, help='validation epochs') 
-
-parser.add_argument('--next_character_prediction', type=bool, default=True, help='task of model')
-
-parser.add_argument('--num_files', type=int, default=3, help='number of files for training data')
-parser.add_argument('--seq_size', type=int, default=1000, help='sequence length') # 1000
 parser.add_argument('--num_samples', type=int, default=3, help='number of random sampled architectures')
 
-parser.add_argument('--one_clip', type=bool, default=True)
-parser.add_argument('--clip', type=float, default=0.25, help='gradient clipping')
+parser.add_argument('--num_steps', type=int, default=2000, help='number of iterations per epoch')
+
+parser.add_argument('--train_directory', type=str, default='data/deepsea_train/train.mat', help='file (TF_bindings) or directory (next_character_prediction) of training data')
+parser.add_argument('--valid_directory', type=str, default='data/deepsea_train/valid.mat', help='file (TF_bindings) or directory (next_character_prediction) of validation data')
+parser.add_argument('--test_directory', type=str, default='data/deepsea_train/test.mat', help='file (TF_bindings) or directory (next_character_prediction) of test data')
+
+parser.add_argument('--task', type=str, default='TF_bindings', help='defines the task: next_character_prediction (not fully implemented!) or TF_bindings (default)')
+
+parser.add_argument('--num_files', type=int, default=3, help='number of files for training data')
+parser.add_argument('--next_character_predict_character', dest='next_character_prediction', action='store_true', help='only for --task=next_character_prediction: predict single character')
+parser.add_argument('--next_character_predict_sequence', dest='next_character_prediction', action='store_false', help='only for --task=next_character_prediction: predict entire sequence, shifted by one character, using causal convolutions')
+parser.set_defaults(next_character_prediction=True)
+parser.add_argument('--seq_size', type=int, default=1000, help='input sequence size')
+parser.add_argument('--num_files', type=int, default=3, help='number of files for training data')
+
+
+parser.add_argument('--one_clip', dest='one_clip', action='store_true', help='use --clip value for both cnn and rhn gradient clipping (default).')
+parser.add_argument('--no-one_clip', dest='one_clip', action='store_false', help='disable one_clip: use --conv_clip and --rhn_clip')
+parser.set_defaults(one_clip=True)
+
+parser.add_argument('--clip', type=float, default=0.25, help='gradient clipping when --one-clip is given')
 parser.add_argument('--conv_clip', type=float, default=5, help='gradient clipping of convs')
 parser.add_argument('--rhn_clip', type=float, default=0.25, help='gradient clipping of lstms')
 
 parser.add_argument('--init_channels', type=int, default=8, help='num of init channels')
 parser.add_argument('--layers', type=int, default=6, help='total number of layers')
-parser.add_argument('--num_classes', type=int, default=4, help='num of output classes') 
-parser.add_argument('--steps', type=int, default=4, help='total number of Nodes')
-#parser.add_argument('--multiplier', type=int, default=4, help='multiplier')
-#parser.add_argument('--stem_multiplier', type=int, default=3, help='stem multiplier')
 
-parser.add_argument('--epochs', type=int, default=2,
+parser.add_argument('--epochs', type=int, default=10,
                     help='upper epoch limit')
 parser.add_argument('--batch_size', type=int, default=2, metavar='N',
                     help='batch size')
-parser.add_argument('--dropout', type=float, default=0.75,
-                    help='dropout applied to layers (0 = no dropout)')
 parser.add_argument('--dropouth', type=float, default=0.25,
                     help='dropout for hidden nodes in rnn layers (0 = no dropout)')
 parser.add_argument('--dropoutx', type=float, default=0.75,
                     help='dropout for input nodes in rnn layers (0 = no dropout)')
-#parser.add_argument('--dropouti', type=float, default=0.2,
-#                    help='dropout for input embedding layers (0 = no dropout)')
-#parser.add_argument('--dropoute', type=float, default=0,
-#                    help='dropout to remove words from embedding layer (0 = no dropout)')
 parser.add_argument('--seed', type=int, default=3,
                     help='random seed')
-parser.add_argument('--nonmono', type=int, default=5,
-                    help='random seed')
-parser.add_argument('--cuda', action='store_false',
-                    help='use CUDA')
 parser.add_argument('--report_freq', type=int, default=1, metavar='N',
                     help='report interval')
 
-parser.add_argument('--alpha', type=float, default=0,
-                    help='alpha L2 regularization on RNN activation (alpha = 0 means no regularization)')
 parser.add_argument('--beta', type=float, default=1e-3,
                     help='beta slowness regularization applied on RNN activiation (beta = 0 means no regularization)')
-parser.add_argument('--continue_train', action='store_true',
-                    help='continue train from a checkpoint')
-parser.add_argument('--max_seq_len_delta', type=int, default=20,
-                    help='max sequence length')
-parser.add_argument('--single_gpu', default=True, action='store_false', 
-                    help='use single GPU')
-parser.add_argument('--gpu', type=int, default=0, help='GPU device to use')
 parser.add_argument('--unrolled', action='store_true', default=False, help='use one-step unrolled validation loss')
-parser.add_argument('--note', type=str, default='try', help='note for this run')
 
 parser.add_argument('--save', type=str,  default='search',
-                    help='name to save the labels and predicitons')
+                    help='file name postfix to save the labels and predicitons')
 parser.add_argument('--save_dir', type=str,  default= 'test_search',
                     help='path to save the labels and predicitons')
 args = parser.parse_args()
 
 
-utils.create_exp_dir(args.save, scripts_to_save=glob.glob('*.py'))
+utils.create_exp_dir(args.save)
 
 log_format = '%(asctime)s %(message)s'
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
@@ -153,13 +125,7 @@ def main():
       
     logging.info("args = %s", args)
            
-    #train_object, valid_object, num_classes = dp.data_preprocessing(train_directory = args.train_directory, valid_directory = args.valid_directory, num_files=args.num_files,
-    #        seq_size = args.seq_len, batch_size=args.batch_size, next_character=args.next_character_prediction)
-    
-    #_, valid_data, num_classes = dp.data_preprocessing(train_directory = args.train_directory, valid_directory = args.valid_directory, num_files=args.num_files,
-    #        seq_size = args.seq_len, batch_size=args.batch_size, next_character=args.next_character_prediction)
-    
-    if args.task == ("next_character_prediction" or "sequence_to_sequence"):
+    if args.task == "next_character_prediction":
         
         import generalNAS_tools.data_preprocessing_new as dp
 
@@ -175,7 +141,6 @@ def main():
         
         import generalNAS_tools.data_preprocessing_TF as dp
         
-        # train_queue, valid_queue, test_queue = dp.data_preprocessing(args.train_input_directory, args.valid_input_directory, args.test_input_directory, args.train_target_directory, args.valid_target_directory, args.test_target_directory, args.batch_size)
         train_queue, valid_queue, test_queue = dp.data_preprocessing(args.train_directory, args.valid_directory, args.test_directory, args.batch_size)
 
         criterion = nn.BCELoss().to(device)
@@ -183,7 +148,7 @@ def main():
         num_classes = 919
            
         
-    random_architectures = generate_random_architectures(generate_num=args.num_samples) # generiert glaube ich 10 random adj. matritzen 
+    random_architectures = generate_random_architectures(generate_num=args.num_samples) # generate <num_samples> random adj. matrices
     
     cnn_masks = []
     rnn_masks = []
@@ -192,27 +157,17 @@ def main():
     for rnn_sub in random_architectures:
         rnn_masks.append(rnn_sub[1])
             
-    #### wenn randamsearchWS, benutze supernet_mask ####
-    #supernet_mask = merge(cnn_masks, rnn_masks) # die 5 subnets zusammengefügt, damit er 1 großes supernet hat, welches aus den 100 init_samples/subarchitecturen gebildet wurde
-    
     random_search_results = []
     
-    count=0
+    count = 0
 
     # store metrics of each configuration here
-    # train_losses_all = []
-    # valid_losses_all = []
-    # acc_train_all = []
     acc_valid_all = []
     
-    # time_per_config = []
-    
-    # for mask, genotype in zip(subnet_masks, genotypes): # iterate over all architectures
     for mask in random_architectures: # iterate over all architectures
         
         configuration_start = time.time()
 
-        # mask = random_architectures[0]
         count += 1
         
         genotype = mask2geno(mask)
@@ -230,14 +185,9 @@ def main():
         conv = []
         rhn = []
         for name, param in random_model.named_parameters():
-            #print(name)
-            #if 'stem' or 'preprocess' or 'conv' or 'bn' or 'fc' in name:
             if 'rnns' in name:
-                #print(name)
                 rhn.append(param)
-            #elif 'decoder' in name:
             else:
-                #print(name)
                 conv.append(param)
         
         optimizer = torch.optim.SGD([{'params':conv}, {'params':rhn}], lr=args.cnn_lr, weight_decay=args.cnn_weight_decay)
@@ -252,22 +202,11 @@ def main():
         clip_params = [args.conv_clip, args.rhn_clip, args.clip]
         
         # metrics for a configuration (epoch wise)
-        # train_losses = [] 
-        # train_acc = []
-
-        # valid_losses = []
         valid_acc = []
 
-        for epoch in range(args.epochs): 
-            # epoch=0
+        for epoch in range(args.epochs):
             logging.info('epoch %d lr %e', epoch, scheduler.get_last_lr()[0])
-            # supernet.drop_path_prob = args.drop_path_prob * epoch / self.epochs
-            # supernet.drop_path_prob = drop_path_prob * epoch / epochs
     
-            # train_acc, train_obj = train(train_object, random_model, criterion, optimizer, lr, epoch, rhn, conv, args.num_steps, clip_params, args.report_freq, args.beta, args.one_clip)
-                                              
-            epoch_start = time.time()
-            
             lr = scheduler.get_last_lr()[0]
         
             labels, predictions, train_loss = train(train_queue, valid_queue, random_model, rhn, conv, criterion, optimizer, None, None, args.unrolled, lr, epoch, args.num_steps, clip_params, args.report_freq, args.beta, args.one_clip, train_arch=False, pdarts=False, task=args.task)
@@ -276,25 +215,18 @@ def main():
     
             labels = np.concatenate(labels)
             predictions = np.concatenate(predictions)
-            # train_losses.append(train_loss)
 
-        
             if args.task == 'next_character_prediction':
                 acc = overall_acc(labels, predictions, args.task)
                 logging.info('| epoch {:3d} | train acc {:5.2f}'.format(epoch, acc))
-                # train_acc.append(acc)
             else:
                 f1 = overall_f1(labels, predictions, args.task)
                 logging.info('| epoch {:3d} | train f1-score {:5.2f}'.format(epoch, f1))
-                # train_acc.append(f1)
 
-        # valid_acc, valid_obj = evaluate_architecture(valid_object, random_model, criterion, optimizer, epoch, args.report_freq, args.num_steps) 
         labels, predictions, valid_loss = infer(valid_queue, random_model, criterion, args.batch_size, args.num_steps, args.report_freq, task=args.task)
 
         labels = np.concatenate(labels)
         predictions = np.concatenate(predictions)
-        
-        # valid_losses.append(valid_loss)
   
         if args.task == 'next_character_prediction':
             acc = overall_acc(labels, predictions, args.task)
@@ -308,13 +240,6 @@ def main():
                     
         random_search_results.append((genotype, acc)) # wenn wir z.B. 20 random samples haben, dann hätten wir liste mit 20 elementen
           
-        # configuration_end = time.time()
-        # configration_duration = configuration_end - configuration_start
-        # time_per_config.append(configration_duration)
-    
-        # train_losses_all.append(train_losses)
-        # valid_losses_all.append(valid_losses)
-        # acc_train_all.append(train_acc)
         acc_valid_all.append(valid_acc)
        
          
@@ -322,35 +247,16 @@ def main():
         return list[1]
     
     random_search_results.sort(reverse=True, key=acc_position)
-    
+
     # final/best architecture
     genotype = random_search_results[0][0]
-    
-    # random_search_file = 'randomSearchResults-{}'.format(args.save)
-    # np.save(os.path.join(args.save_dir, random_search_file), random_search_results)
-    
+
     genotype_file = 'random_geno-{}'.format(args.save)
     np.save(os.path.join(args.save_dir, genotype_file), genotype)
-    
-    # trainloss_file = 'train_loss-{}'.format(args.save)
-    # np.save(os.path.join(args.save_dir, trainloss_file), train_losses_all)
-    
-    # acc_train_file = 'acc_train-{}'.format(args.save)
-    # np.save(os.path.join(args.save_dir, acc_train_file), acc_train_all)
-
-    # time_file = 'time-{}'.format(args.save)
-    # np.save(os.path.join(args.save_dir, time_file), time_per_config)
-
-    # safe valid data
-    # validloss_file = 'valid_loss-{}'.format(args.save)
-    # np.save(os.path.join(args.save_dir, validloss_file), valid_losses_all)
 
     acc_valid_file = 'acc_valid-{}'.format(args.save)
     np.save(os.path.join(args.save_dir, acc_valid_file), acc_valid_all)
     
-
-
-
 if __name__ == '__main__':
     start_time = time.time()
     main() 

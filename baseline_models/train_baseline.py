@@ -60,10 +60,10 @@ parser.add_argument('--epochs', type=int, default=10, help='num of training epoc
 # parser.add_argument('--test_epochs', type=int, default=1, help='num of testing epochs')
 
 parser.add_argument('--task', type=str, default='TF_bindings', help='defines the task: next_character_prediction (not fully implemented!) or TF_bindings (default)')
-parser.add_argument('--num_steps', type=int, default=2000, help='number of iterations per epoch')
+parser.add_argument('--num_steps', type=int, default=3000, help='number of iterations per epoch')
 
-parser.add_argument('--valid_directory', type=str, default='data/deepsea_train/valid.mat', help='file (TF_bindings) or directory (next_character_prediction) of validation data')
 parser.add_argument('--train_directory', type=str, default='data/deepsea_train/train.mat', help='file (TF_bindings) or directory (next_character_prediction) of training data')
+parser.add_argument('--valid_directory', type=str, default='data/deepsea_train/valid.mat', help='file (TF_bindings) or directory (next_character_prediction) of validation data')
 parser.add_argument('--test_directory', type=str, default='data/deepsea_train/test.mat', help='file (TF_bindings) or directory (next_character_prediction) of test data')
 
 parser.add_argument('--num_files', type=int, default=3, help='number of files for training data')

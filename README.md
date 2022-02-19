@@ -171,13 +171,15 @@ python test_finalArchitecture.py --seq_size=1000 --batch_size=100 --train_direct
 
 * `BO_tools`:
 * `BONAS_search_space`:
+* `baseline_models`:
 * `darts_tools`:
 * `data_generators`:
-* `genomicNAS_Algorithms`:
+* `generalNAS_tools`
+* `genomicNAS_Algorithms`: Location of the actual algorithms
 * `predictors`:
 * `randomSearch_and_Hyperband_Tools`:
 * `samplers`:
 * `opendomain_utils`:
 * `preliminary_study_results`:
 * `data`: Directory where the DeepSea-data should be downloaded into.
-* `results`:
+* `results`: Directory where results get stored.
