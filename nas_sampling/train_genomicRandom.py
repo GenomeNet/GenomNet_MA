@@ -14,13 +14,13 @@ import torch
 import logging
 import torch.nn as nn
 
-import randomSearch_and_Hyperband_Tools.model as one_shot_model
+import nas_sampling.model as one_shot_model
 
-from randomSearch_and_Hyperband_Tools.random_Sampler import generate_random_architectures
+from nas_sampling.random_Sampler import generate_random_architectures
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-from randomSearch_and_Hyperband_Tools.utils import mask2geno
+from nas_sampling.utils import mask2geno
 
 from generalNAS_tools import utils
 

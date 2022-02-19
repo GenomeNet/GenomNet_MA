@@ -16,7 +16,7 @@ from generalNAS_tools.train_and_validate_HB import infer
 
 from generalNAS_tools.utils import overall_acc, overall_f1
 
-from randomSearch_and_Hyperband_Tools.hyperbandSampler import maskout_ops, create_cnn_edge_sampler, create_rhn_edge_sampler
+from nas_sampling.hyperbandSampler import maskout_ops, create_cnn_edge_sampler, create_rhn_edge_sampler
 
 import numpy as np
 

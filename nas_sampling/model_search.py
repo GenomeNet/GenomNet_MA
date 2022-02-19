@@ -11,7 +11,7 @@ import torch.nn as nn
 
 from generalNAS_tools.genotypes import rnn_steps, PRIMITIVES_rnn, CONCAT
 
-from randomSearch_and_Hyperband_Tools.model import DARTSCell, RNNModel
+from nas_sampling.model import DARTSCell, RNNModel
 
 import numpy as np
 

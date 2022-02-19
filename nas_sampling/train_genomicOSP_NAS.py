@@ -6,7 +6,7 @@ Created on Sun Nov  7 23:17:14 2021
 @author: amadeu
 """
 
-from randomSearch_and_Hyperband_Tools.utils import mask2geno
+from nas_sampling.utils import mask2geno
 
 import argparse
 import os, sys
@@ -16,20 +16,20 @@ import torch
 import logging
 import torch.nn as nn
 import copy
-import randomSearch_and_Hyperband_Tools.model_search as one_shot_model
+import nas_sampling.model_search as one_shot_model
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 from generalNAS_tools import utils
 
-from randomSearch_and_Hyperband_Tools.hyperbandSampler import create_cnn_supersubnet, create_rhn_supersubnet
+from nas_sampling.hyperbandSampler import create_cnn_supersubnet, create_rhn_supersubnet
 
 from generalNAS_tools.train_and_validate_HB import train, infer
 
 from generalNAS_tools.utils import overall_acc, overall_f1
 
-from randomSearch_and_Hyperband_Tools.create_masks import create_cnn_masks, create_rhn_masks
+from nas_sampling.create_masks import create_cnn_masks, create_rhn_masks
 
-from randomSearch_and_Hyperband_Tools.hyperband_final_tools import final_stage_run
+from nas_sampling.hyperband_final_tools import final_stage_run
 
 
 parser = argparse.ArgumentParser(description='DARTS for genomic Data')
