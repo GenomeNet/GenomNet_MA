@@ -6,108 +6,82 @@ Created on Sun Nov  7 23:17:14 2021
 @author: amadeu
 """
 
-from randomSearch_and_Hyperband_Tools.random_Sampler import generate_random_architectures
-#from transform_genotype import transform_Genotype
-from randomSearch_and_Hyperband_Tools.utils import mask2geno, merge, mask2switch
+from randomSearch_and_Hyperband_Tools.utils import mask2geno
 
-# von DARTS
 import argparse
-import os, sys, glob
+import os, sys
 import time
-import math
 import numpy as np
 import torch
 import logging
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.backends.cudnn as cudnn
 import copy
-import gc
-import generalNAS_tools.genotypes
 import randomSearch_and_Hyperband_Tools.model_search as one_shot_model
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-from generalNAS_tools.utils import repackage_hidden, create_exp_dir, save_checkpoint
 
 from generalNAS_tools import utils
 
 from randomSearch_and_Hyperband_Tools.hyperbandSampler import create_cnn_supersubnet, create_rhn_supersubnet
 
-#from randomSearch_and_Hyperband_Tools.train_and_validate import train, evaluate_architecture
-
 from generalNAS_tools.train_and_validate_HB import train, infer
 
-from generalNAS_tools.utils import scores_perClass, scores_Overall, pr_aucPerClass, roc_aucPerClass, overall_acc, overall_f1
-
-# from randomSearch_and_Hyperband_Tools.hyperbandSampler import maskout_ops, create_new_supersubnet
+from generalNAS_tools.utils import overall_acc, overall_f1
 
 from randomSearch_and_Hyperband_Tools.create_masks import create_cnn_masks, create_rhn_masks
-
-import itertools
-import logging
 
 from randomSearch_and_Hyperband_Tools.hyperband_final_tools import final_stage_run
 
 
-#from ..data_preprocessing import get_data
-# import generalNAS_tools.data_preprocessing_new as dp
-
-
 parser = argparse.ArgumentParser(description='DARTS for genomic Data')
-#parser.add_argument('--data', type=str, default='/home/amadeu/anaconda3/envs/darts_env/cnn/data2/trainset.txt', help='location of the data corpus')
 parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
 parser.add_argument('--cnn_lr', type=float, default=0.025, help='learning rate for CNN part')
 parser.add_argument('--cnn_weight_decay', type=float, default=3e-4, help='weight decay for CNN part')
-parser.add_argument('--rhn_lr', type=float, default=2, help='learning rate for CNN part')
+parser.add_argument('--rhn_lr', type=float, default=2, help='learning rate for RHN part')
 parser.add_argument('--rhn_weight_decay', type=float, default=5e-7, help='weight decay for RHN part')
 
 parser.add_argument('--num_ops', type=int, default=4, help='number of operations which are evaluated after budget')
 parser.add_argument('--pretrain_epochs', type=int, default=5, help='budget/epochs after operations are discarded')
 parser.add_argument('--budget', type=int, default=1, help='budget/epochs after operations are discarded')
-parser.add_argument('--num_super_subnets', type=int, default=5, help='number of supersubnets which are created after ')
 parser.add_argument('--num_init_archs', type=int, default=108, help='build the initialized supermodel with a certain number of subarchitctures')
 
 
-parser.add_argument('--validation', type=bool, default=True)
-parser.add_argument('--report_validation', type=int, default=2, help='validation epochs') 
+parser.add_argument('--validation', dest='validation', action='store_true', help='do validation (default)')
+parser.add_argument('--no-validation', dest='validation', action='store_false', help='no validation; disables --validation')
+parser.set_defaults(validation=True)
 
-parser.add_argument('--num_steps', type=int, default=4, help='number of iterations per epoch')
-parser.add_argument('--train_directory', type=str, default='/home/amadeu/Downloads/genomicData/train', help='directory of training data')
-parser.add_argument('--valid_directory', type=str, default='/home/amadeu/Downloads/genomicData/validation', help='directory of validation data')
-parser.add_argument('--test_directory', type=str, default='/home/amadeu/Downloads/genomicData/test', help='directory of test data')
+parser.add_argument('--report_validation', type=int, default=1, help='validation report period; default 1 (every epoch)')
 
-parser.add_argument('--train_input_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/inputs_small.pkl', help='directory of train data')
-parser.add_argument('--train_target_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/targets_small.pkl', help='directory of train data')
-parser.add_argument('--valid_input_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/inputs_small_val.pkl', help='directory of validation data')
-parser.add_argument('--valid_target_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/targets_small_val.pkl', help='directory of validation data')
-parser.add_argument('--test_input_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/inputs_small_test.pkl', help='directory of test data')
-parser.add_argument('--test_target_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/targets_small_test.pkl', help='directory of test data')
+parser.add_argument('--num_steps', type=int, default=2000, help='number of iterations per epoch')
 
-parser.add_argument('--task', type=str, default='TF_bindings', help='defines the task')#TF_bindings
+parser.add_argument('--train_directory', type=str, default='data/deepsea_train/train.mat', help='file (TF_bindings) or directory (next_character_prediction) of training data')
+parser.add_argument('--valid_directory', type=str, default='data/deepsea_train/valid.mat', help='file (TF_bindings) or directory (next_character_prediction) of validation data')
+parser.add_argument('--test_directory', type=str, default='data/deepsea_train/test.mat', help='file (TF_bindings) or directory (next_character_prediction) of test data')
 
-parser.add_argument('--num_files', type=int, default=3, help='number of files for training data')
+parser.add_argument('--task', type=str, default='TF_bindings', help='defines the task: next_character_prediction (not fully implemented!) or TF_bindings (default)')
+
+parser.add_argument('--num_files', type=int, default=3, help='number of files for training data (for --task=next_character_prediction)')
+
 parser.add_argument('--seq_size', type=int, default=1000, help='sequence length')
-parser.add_argument('--num_samples', type=int, default=3, help='number of random sampled architectures')
-parser.add_argument('--next_character_prediction', default=True, action='store_true', help='task of model')
+parser.add_argument('--next_character_predict_character', dest='next_character_prediction', action='store_true', help='only for --task=next_character_prediction: predict single character')
+parser.add_argument('--next_character_predict_sequence', dest='next_character_prediction', action='store_false', help='only for --task=next_character_prediction: predict entire sequence, shifted by one character, using causal convolutions')
+parser.set_defaults(next_character_prediction=True)
 
-parser.add_argument('--one_clip', type=bool, default=True)
-parser.add_argument('--clip', type=float, default=0.25, help='gradient clipping')
+parser.add_argument('--one_clip', dest='one_clip', action='store_true', help='use --clip value for both cnn and rhn gradient clipping (default).')
+parser.add_argument('--no-one_clip', dest='one_clip', action='store_false', help='disable one_clip: use --conv_clip and --rhn_clip')
+parser.set_defaults(one_clip=True)
+
+parser.add_argument('--clip', type=float, default=0.25, help='gradient clipping when --one-clip is given')
 parser.add_argument('--conv_clip', type=float, default=5, help='gradient clipping of convs')
 parser.add_argument('--rhn_clip', type=float, default=0.25, help='gradient clipping of lstms')
 
 parser.add_argument('--init_channels', type=int, default=8, help='num of init channels')
 parser.add_argument('--layers', type=int, default=6, help='total number of layers')
-# parser.add_argument('--num_classes', type=int, default=4, help='num of output classes') 
 parser.add_argument('--steps', type=int, default=4, help='total number of Nodes')
-#parser.add_argument('--multiplier', type=int, default=4, help='multiplier')
-#parser.add_argument('--stem_multiplier', type=int, default=3, help='stem multiplier')
 
 parser.add_argument('--epochs', type=int, default=60,
-                    help='upper epoch limit')
+                    help='epochs of the cosine annealing schedule. Note the actual number of epochs per round is determined by --budget')
 parser.add_argument('--batch_size', type=int, default=2, metavar='N',
                     help='batch size')
-#parser.add_argument('--dropout', type=float, default=0.75,
-#                    help='dropout applied to layers (0 = no dropout)')
 parser.add_argument('--dropouth', type=float, default=0.25,
                     help='dropout for hidden nodes in rnn layers (0 = no dropout)')
 parser.add_argument('--dropoutx', type=float, default=0.75,
@@ -115,35 +89,20 @@ parser.add_argument('--dropoutx', type=float, default=0.75,
 
 parser.add_argument('--seed', type=int, default=3,
                     help='random seed')
-parser.add_argument('--nonmono', type=int, default=5,
-                    help='random seed')
-parser.add_argument('--cuda', action='store_false',
-                    help='use CUDA')
 parser.add_argument('--report_freq', type=int, default=1, metavar='N',
                     help='report interval')
 
-parser.add_argument('--alpha', type=float, default=0,
-                    help='alpha L2 regularization on RNN activation (alpha = 0 means no regularization)')
 parser.add_argument('--beta', type=float, default=1e-3,
                     help='beta slowness regularization applied on RNN activiation (beta = 0 means no regularization)')
-parser.add_argument('--continue_train', action='store_true',
-                    help='continue train from a checkpoint')
-parser.add_argument('--max_seq_len_delta', type=int, default=20,
-                    help='max sequence length')
-parser.add_argument('--single_gpu', default=True, action='store_false', 
-                    help='use single GPU')
-parser.add_argument('--gpu', type=int, default=0, help='GPU device to use')
-parser.add_argument('--unrolled', action='store_true', default=False, help='use one-step unrolled validation loss')
-parser.add_argument('--note', type=str, default='try', help='note for this run')
 
 parser.add_argument('--save', type=str,  default='search',
-                    help='name to save the labels and predicitons')
+                    help='file name postfix to save the labels and predicitons')
 parser.add_argument('--save_dir', type=str,  default= 'test_search',
                     help='path to save the labels and predicitons')
 args = parser.parse_args()
 
 
-utils.create_exp_dir(args.save, scripts_to_save=glob.glob('*.py'))
+utils.create_exp_dir(args.save)
 
 log_format = '%(asctime)s %(message)s'
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
@@ -188,7 +147,7 @@ def main():
       
     logging.info("args = %s", args)
 
-    if args.task == ("next_character_prediction" or "sequence_to_sequence"):
+    if args.task == "next_character_prediction":
         
         import generalNAS_tools.data_preprocessing_new as dp
 
@@ -204,7 +163,6 @@ def main():
         
         import generalNAS_tools.data_preprocessing_TF as dp
         
-        # train_queue, valid_queue, test_queue = dp.data_preprocessing(args.train_input_directory, args.valid_input_directory, args.test_input_directory, args.train_target_directory, args.valid_target_directory, args.test_target_directory, args.batch_size)
         train_queue, valid_queue, test_queue = dp.data_preprocessing(args.train_directory, args.valid_directory, args.test_directory, args.batch_size)
 
         criterion = nn.BCELoss().to(device)
@@ -223,11 +181,6 @@ def main():
     
     multiplier, stem_multiplier = 4, 3
 
-    # super_model = one_shot_model.RNNModelSearch(args.seq_size, args.dropouth, args.dropoutx,
-    #                          args.init_channels, num_classes, args.layers, args.steps, multiplier, stem_multiplier,  
-    #                          True, 0.2, None, args.task, 
-    #                          switches_normal, switches_reduce, switches_rnn, 0.0).to(device)
-    
     super_model = one_shot_model.RNNModelSearch(args.seq_size, args.dropouth, args.dropoutx,
                               args.init_channels, num_classes, args.layers, args.steps, multiplier, stem_multiplier,  
                               True, 0.2, None, args.task, supernet_mask).to(device)
@@ -235,13 +188,9 @@ def main():
     conv = []
     rhn = []
     for name, param in super_model.named_parameters():
-        #if 'stem' or 'preprocess' or 'conv' or 'bn' or 'fc' in name:
         if 'rnns' in name:
-            #print(name)
             rhn.append(param)
-        #elif 'decoder' in name:
         else:
-            #print(name)
             conv.append(param)
         
     optimizer = torch.optim.SGD([{'params':conv}, {'params':rhn}], lr=args.cnn_lr, weight_decay=args.cnn_weight_decay)
@@ -263,9 +212,6 @@ def main():
 
     # pretrain a supernet S for some epochs, with all sampled edges, nodes and operations
     for epoch in range(args.pretrain_epochs): 
-        # epoch=0
-        # supernet.drop_path_prob = args.drop_path_prob * epoch / self.epochs
-        # supernet.drop_path_prob = drop_path_prob * epoch / epochs
         lr = scheduler.get_last_lr()[0]
         
         train_start = time.strftime("%Y%m%d-%H%M")
@@ -291,14 +237,12 @@ def main():
         train_losses.append(train_loss)
         epoch_end = time.time()
         time_per_epoch.append(epoch_end)
-        # train_acc, train_obj = train(train_object, super_model, criterion, optimizer, lr, epoch, rhn, conv, args.num_steps, clip_params, args.report_freq, args.beta, args.one_clip)
 
         scheduler.step()
         
         if args.validation == True:
                 if epoch % args.report_validation == 0:
                     labels, predictions, valid_loss = infer(valid_queue, super_model, criterion, args.batch_size, args.num_steps, args.report_freq, task=args.task, mask=supernet_mask)
-                    # logging.info('Valid_acc %f', valid_acc)
                     
                     labels = np.concatenate(labels)
                     predictions = np.concatenate(predictions)
@@ -317,7 +261,6 @@ def main():
         
     supernet_mask = copy.deepcopy(supernet_mask)
     
-    # supernet_mask[0]
     disc_ops_normal = disc_ops_reduce = disc_ops_rhn = [1,1]
     runde=0
     
@@ -326,7 +269,6 @@ def main():
         runde += 1
         print(runde)
         # create the supersubnets and evaluate them
-        # cnn_test = supernet_mask[0]
         old_super_model_weights = super_model.state_dict()   
         
         hyperband_results = []
@@ -344,9 +286,7 @@ def main():
 
         iters = max(len_nor, len_red, len_rhn)
         
-        # for i in range(args.num_super_subnets):
-        for i in range(iters): # iters=8
-           # i=2
+        for i in range(iters):
            disc_nor = disc_ops_normal[i]
           
            disc_red = disc_ops_reduce[i]
@@ -358,15 +298,8 @@ def main():
            supersubnet_mask = maskout_ops(disc_nor, disc_red, disc_rhn, supernet_mask)
 
             
-           # mask_normal, disc_ops_normal = create_cnn_supersubnet(supernet_mask[0], args.num_disc)
-           # mask_reduce, disc_ops_reduce = create_cnn_supersubnet(supernet_mask[1], args.num_disc)
-           # mask_rhn, disc_ops_rhn = create_rhn_supersubnet(supernet_mask, args.num_disc)
-            
-           # supersubnet_mask = [mask_normal, mask_reduce, mask_rhn]
-
            # validate the supersubnets using weights from pretrained supernet S
            for epoch in range(1):               
-               #labels, predictions, valid_loss = infer(valid_queue, supersubnet_model, criterion, args.batch_size, 2*args.num_steps, args.report_freq, task=args.task)
                labels, predictions, valid_loss = infer(valid_queue, super_model, criterion, args.batch_size, 2*args.num_steps, args.report_freq, task=args.task, mask=supersubnet_mask)
                logging.info('| valid loss{:5.2f}'.format(valid_loss))
                
@@ -376,13 +309,10 @@ def main():
                if args.task == 'next_character_prediction':
                    acc = overall_acc(labels, predictions, args.task)
                    logging.info('| epoch {:3d} | valid acc {:5.2f}'.format(epoch, acc))
-                   #valid_acc.append(acc)
                else:
                    acc = overall_f1(labels, predictions, args.task)
                    logging.info('| epoch {:3d} | valid f1-score {:5.2f}'.format(epoch, acc))
-                   #valid_acc.append(acc)
-               # valid_acc, valid_obj = evaluate_architecture(valid_object, supersubnet_model, criterion, optimizer, epoch) 
-               hyperband_results.append([disc_ops, valid_loss]) # hätten am Ende z.B. 5 hyperband_results
+               hyperband_results.append([disc_ops, valid_loss]) # this could e.g. be. 5 hyperband_results
            
         #try:
         def acc_position(list):
@@ -394,8 +324,6 @@ def main():
         # discard the edges and operations from the good performing supersubnets to build new S
         # keep mask with best/highest acc 
         supernet_mask = create_new_supersubnet(hyperband_results, supernet_mask)
-        
-        # super_model = hyperband_results[0][1]
         
         super_model = one_shot_model.RNNModelSearch(args.seq_size, args.dropouth, args.dropoutx,
                               args.init_channels, num_classes, args.layers, args.steps, multiplier, stem_multiplier,  
@@ -412,14 +340,9 @@ def main():
         conv = []
         rhn = []
         for name, param in super_model.named_parameters():
-            #print(name)
-            #if 'stem' or 'preprocess' or 'conv' or 'bn' or 'fc' in name:
             if 'rnns' in name:
-                #print(name)
                 rhn.append(param)
-            #elif 'decoder' in name:
             else:
-                #print(name)
                 conv.append(param)
         
         optimizer = torch.optim.SGD([{'params':conv}, {'params':rhn}], lr=args.cnn_lr-(0.0002*runde), weight_decay=args.cnn_weight_decay)
@@ -435,7 +358,6 @@ def main():
         
         # now train the remaining supernet S for few epochs (according to budget)
         for epoch in range(args.budget): 
-            # epoch=0
             lr = scheduler.get_last_lr()[0]
         
             train_start = time.strftime("%Y%m%d-%H%M")
@@ -444,8 +366,6 @@ def main():
             logging.info('Epoch: %d lr: %e', epoch, lr)
             epoch_start = time.time()
 
-            # supernet.drop_path_prob = args.drop_path_prob * epoch / self.epochs
-            # supernet.drop_path_prob = drop_path_prob * epoch / epochs
             labels, predictions, train_loss = train(train_queue, valid_queue, super_model, rhn, conv, criterion, optimizer, epoch, args.num_steps, clip_params, args.report_freq, args.beta, args.one_clip, task=args.task, mask=supernet_mask)
 
             labels = np.concatenate(labels)
@@ -469,8 +389,7 @@ def main():
             if args.validation == True:
                 if epoch % args.report_validation == 0:
                     labels, predictions, valid_loss = infer(valid_queue, super_model, criterion, args.batch_size, 2*args.num_steps, args.report_freq, task=args.task, mask=supernet_mask)
-                    # logging.info('Valid_acc %f', valid_acc)
-                   
+
                     labels = np.concatenate(labels)
                     predictions = np.concatenate(predictions)
                     
@@ -500,7 +419,6 @@ def main():
 
 
           
-    # hyperband_results.sort(reverse=True, key=acc_position)
     # final/best architecture
     
     genotype = mask2geno(supernet_mask)
@@ -525,27 +443,6 @@ def main():
     acc_valid_file = 'acc_valid-{}'.format(args.save)
     np.save(os.path.join(args.save_dir, acc_valid_file), valid_acc)
 
-    #genotype_file = 'hb_geno-{}'.format(args.save)
-    #np.save(genotype_file, genotype)
-    
-    #mask_file = 'hb_mask-{}'.format(args.save)
-    # np.save(hyperband_file, supernet_mask, genotype)
-    #np.save(mask_file, supernet_mask)
-            
-    #trainloss_file = 'train_loss-{}'.format(args.save, train_start)
-    #np.save(trainloss_file, train_losses_all)
-      
-    #acctrain_file = 'acc_train-{}'.format(args.save, train_start) 
-    #np.save(acctrain_file, acc_train_all)
-         
-    #validloss_file = 'valid_loss-{}'.format(args.save, train_start)
-    #np.save(validloss_file, valid_losses_all)
-      
-    #accvalid_file = 'acc_valid-{}'.format(args.save, train_start) 
-    #np.save(acctrain_file, acc_valid_all)
-    
-
-  
 
 if __name__ == '__main__':
     start_time = time.time()

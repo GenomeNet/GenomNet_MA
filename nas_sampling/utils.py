@@ -6,20 +6,13 @@ Created on Fri Jun 25 20:47:00 2021
 @author: amadeu
 """
 
-
-
-from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, rnn_steps, CONCAT, Genotype
+from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, CONCAT, Genotype
 import numpy as np
 
 import copy
 
 import torch
 import torch.nn as nn
-import os, shutil
-from torch.autograd import Variable
-
-
-
 
 
 def mask2geno(mask):
@@ -81,67 +74,9 @@ def mask2geno(mask):
 
 
 
-def geno2mask(genotype):
-    des = -1
-    #mask = np.zeros([14+36,8+4])
-    
-    cnn_mask = np.zeros([14,9])
-    rnn_mask = np.zeros([36,5])
 
-    op_names_cnn, indices = zip(*genotype[0])
-    for cnt, (name, index) in enumerate(zip(op_names_cnn, indices)):
-     
-        if cnt % 2 == 0: 
-       
-            des += 1 
-            total_state = sum(i + 2 for i in range(des)) 
-           
-        op_idx = PRIMITIVES_cnn.index(name) 
-        node_idx = index + total_state 
-        
-        cnn_mask[node_idx, op_idx] = 1 
-      
-    op_names_rnn, indices = zip(*genotype[4])
-
-    aux = 0
-    for cnt, (name, index) in enumerate(zip(op_names_rnn, indices)):
-   
-       
-        node_idx = aux + index
-      
-        op_idx = PRIMITIVES_rnn.index(name) 
-    
-        rnn_mask[node_idx, op_idx] = 1 
-        
-        aux += cnt +1
-        
-    return cnn_mask, rnn_mask
-
-#subnet_mask = geno2mask(genotype)
-
-
-
-
-def merge(normal_mask, reduce_mask, rnn_mask):
-    
-    supernet_mask_normal = np.zeros((14, 9))
-    supernet_mask_reduce = np.zeros((14, 9))
-    supernet_mask_rnn = np.zeros((36,5))
-    
-    for mask in normal_mask: 
-        supernet_mask_normal = mask + supernet_mask_normal
-        
-    for mask in reduce_mask: 
-        supernet_mask_reduce = mask + supernet_mask_reduce
-        
-    for mask in rnn_mask: 
-        supernet_mask_rnn = mask + supernet_mask_rnn
-        
-    return supernet_mask_normal, supernet_mask_reduce, supernet_mask_rnn
-
-
-
-
+#####################################
+###### used by OSP-NAS
 
 def mask2switch(normal_mask, reduce_mask, rnn_mask):
     

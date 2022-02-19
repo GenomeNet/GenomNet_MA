@@ -6,12 +6,10 @@ Created on Sat Jul 31 07:51:45 2021
 @author: amadeu
 """
 
-import pickle
 import mat73
 import scipy.io
-import torch 
+import torch
 from torch.utils.data import Dataset, DataLoader
-import numpy as np
 
 def data_preprocessing(train_directory, valid_directory, test_directory, batch_size):
     

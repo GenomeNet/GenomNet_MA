@@ -8,27 +8,17 @@ Created on Mon Sep 13 16:28:39 2021
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-# from genotypes_rnn import PRIMITIVES, STEPS, CONCAT, total_genotype
-from generalNAS_tools.operations_14_9 import *
-from generalNAS_tools.genotypes import PRIMITIVES_cnn, rnn_steps, PRIMITIVES_rnn, CONCAT
-from generalNAS_tools import genotypes
+from generalNAS_tools.genotypes import rnn_steps, PRIMITIVES_rnn, CONCAT
 
-from torch.autograd import Variable
-from collections import namedtuple
 from randomSearch_and_Hyperband_Tools.model import DARTSCell, RNNModel
 
 import numpy as np
 
+#####################################
+###### used by OSP-NAS
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-from darts_tools.comp_aux import compute_positions, activ_fun
-
-
-#import cnn_eval
-
-# for search
 
 # ninp, nhid, dropouth, dropoutx, mask
 class DARTSCellSearch(DARTSCell):
@@ -45,7 +35,6 @@ class DARTSCellSearch(DARTSCell):
     s0 = self._compute_init_state(x, h_prev, x_mask, h_mask)
     #print(s0.shape)
     s0 = self.bn(s0)
-    #probs = F.softmax(self.weights, dim=-1) 
    
     offset = 0
     states = s0.unsqueeze(0) 
@@ -84,7 +73,6 @@ class DARTSCellSearch(DARTSCell):
 
     output = torch.mean(states[-CONCAT:], dim=0) 
     return output
-
 
 
 

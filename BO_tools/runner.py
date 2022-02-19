@@ -12,7 +12,7 @@ import random
 import argparse
 import logging
 from opendomain_utils.encode_and_train import encode_train, read_results
-from opendomain_utils.transform_genotype import transform_Genotype, transform_matrix, geno2mask
+from opendomain_utils.transform_genotype import transform_Genotype
 from data_generators.dynamic_generate import generate_archs
 
 from opendomain_utils.ioutils import get_geno_hash, get_trained_csv, get_trained_archs, update_trained_csv, \

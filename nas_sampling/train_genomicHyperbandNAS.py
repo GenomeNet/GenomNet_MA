@@ -7,46 +7,24 @@ Created on Fri Sep 24 21:46:23 2021
 """
 
 import argparse
-import os, sys, glob
+import os, sys
 import time
-import math
 import numpy as np
 import torch
 import logging
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.backends.cudnn as cudnn
 
-import gc
+import randomSearch_and_Hyperband_Tools.model as one_shot_model
 
-import torch.utils
-
-# original nur RNN version
-import generalNAS_tools.genotypes
-# from randomSearch_and_Hyperband_Tools.model_search import RNNModelSearch
-
-import model_search as one_shot_model
-
-from randomSearch_and_Hyperband_Tools.random_Sampler import generate_random_architectures, mask2genotype
-# from transform_genotype import transform_Genotype
+from randomSearch_and_Hyperband_Tools.random_Sampler import generate_random_architectures
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-from randomSearch_and_Hyperband_Tools.utils import mask2geno, geno2mask, merge
-
-from generalNAS_tools.utils import repackage_hidden, create_exp_dir, save_checkpoint
+from randomSearch_and_Hyperband_Tools.utils import mask2geno
 
 from generalNAS_tools import utils
 
-#from ..data_preprocessing import get_data
-
-# from randomSearch_and_Hyperband_Tools.train_and_validate import train, evaluate_architecture
-from generalNAS_tools.train_and_validate import train, infer
-
 from randomSearch_and_Hyperband_Tools.hb_iteration import hb_step
-
-from generalNAS_tools.utils import scores_perClass, scores_Overall, pr_aucPerClass, roc_aucPerClass, overall_acc, overall_f1
-
 
 
 parser = argparse.ArgumentParser(description='DARTS for genomic Data')
@@ -66,12 +44,12 @@ parser.add_argument('--test_directory', type=str, default='data/deepsea_train/te
 
 parser.add_argument('--task', type=str, default='TF_bindings', help='defines the task: next_character_prediction (not fully implemented!) or TF_bindings (default)')
 
-parser.add_argument('--num_files', type=int, default=3, help='number of files for training data')
+parser.add_argument('--num_files', type=int, default=3, help='number of files for training data (for --task=next_character_prediction)')
 parser.add_argument('--next_character_predict_character', dest='next_character_prediction', action='store_true', help='only for --task=next_character_prediction: predict single character')
 parser.add_argument('--next_character_predict_sequence', dest='next_character_prediction', action='store_false', help='only for --task=next_character_prediction: predict entire sequence, shifted by one character, using causal convolutions')
 parser.set_defaults(next_character_prediction=True)
 parser.add_argument('--seq_size', type=int, default=1000, help='input sequence size')
-parser.add_argument('--num_files', type=int, default=3, help='number of files for training data')
+parser.add_argument('--num_files', type=int, default=3, help='number of files for training data (for --task=next_character_prediction)')
 
 
 parser.add_argument('--one_clip', dest='one_clip', action='store_true', help='use --clip value for both cnn and rhn gradient clipping (default).')
@@ -177,7 +155,6 @@ def main():
     
         configuration_start = time.time()
 
-        # mask = random_architectures[1]
         count += 1
         
         genotype = mask2geno(mask)

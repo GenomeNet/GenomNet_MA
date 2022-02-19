@@ -7,44 +7,24 @@ Created on Wed Apr 28 08:39:30 2021
 """
 
 import argparse
-import os, sys, glob
+import os, sys
 import time
-import math
 import numpy as np
 import torch
 import logging
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.backends.cudnn as cudnn
-#from architect import Architect
-import time
 
-#import genotypes_rnn
-#import genotypes_cnn
-from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, rnn_steps, CONCAT, Genotype
+from generalNAS_tools.utils import overall_acc, overall_f1
 
-from generalNAS_tools.utils import scores_perClass, scores_Overall, pr_aucPerClass, roc_aucPerClass, overall_acc, overall_f1
-
-import gc
-
-#import data
-# import model_searchCNN as oneshot_model
 import model_search as one_shot_model
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-from generalNAS_tools.utils import repackage_hidden, create_exp_dir, save_checkpoint 
 from generalNAS_tools import utils
 
 import generalNAS_tools.data_preprocessing_new as dp
 
 from generalNAS_tools.train_and_validate import train, infer
-
-import darts_tools.cnn_eval
-
-# 1. rnn_mask in model_search2.py initialisieren
-
-
 
 parser = argparse.ArgumentParser(description='Evaluate final architecture found by PDARTS')
 parser.add_argument('--data', type=str, default='/home/amadeu/anaconda3/envs/darts_env/cnn/data2/trainset.txt', help='location of the data corpus')
@@ -143,7 +123,7 @@ args = parser.parse_args()
 
 
 #args.save = '{}search-{}-{}'.format(args.save, args.note, time.strftime("%Y%m%d-%H%M%S"))
-utils.create_exp_dir(args.save, scripts_to_save=glob.glob('*.py'))
+utils.create_exp_dir(args.save)
 
 log_format = '%(asctime)s %(message)s'
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
@@ -200,20 +180,13 @@ def main():
         model = torch.load(os.path.join(args.save, 'model.pt'))
     else:      
         genotype = np.load(args.genotype_file, allow_pickle=True)
-        # genotype = np.load('/home/amadeu/Desktop/GenomNet_MA/EXPsearch-try-20210626-091257-random_geno.npy', allow_pickle=True)
     
         # my_gene = genotype
         # his_gene = genotype
         
-        #from randomSearch_and_Hyperband_Tools.utils import geno2mask
-        
-        #cnn_mask, rhn_mask = geno2mask(genotype)
-        
         #supernet_mask = [cnn_mask, cnn_mask, rhn_mask]
 
         #from generalNAS_tools.train_and_validate_HB import train, infer
-        
-        #import randomSearch_and_Hyperband_Tools.model_search2 as one_shot_model
         
         #model = one_shot_model.RNNModelSearch(args.seq_size, args.dropouth, args.dropoutx,
         #                          args.init_channels, num_classes, args.layers, args.steps, multiplier, stem_multiplier,  
@@ -227,14 +200,9 @@ def main():
     conv = []
     rhn = []
     for name, param in model.named_parameters():
-        #print(name)
-        #if 'stem' or 'preprocess' or 'conv' or 'bn' or 'fc' in name:
         if 'rnns' in name:
-            #print(name)
             rhn.append(param)
-            #elif 'decoder' in name:
         else:
-            #print(name)
             conv.append(param)
             
     optimizer = torch.optim.SGD([{'params':conv}, {'params':rhn}], lr=args.cnn_lr, weight_decay=args.cnn_weight_decay)

@@ -66,7 +66,7 @@ parser.add_argument('--valid_directory', type=str, default='/home/amadeu/Downloa
 parser.add_argument('--train_directory', type=str, default='/home/amadeu/Downloads/genomicData/train', help='directory of training data')
 parser.add_argument('--test_directory', type=str, default='/home/amadeu/Downloads/genomicData/test', help='directory of test data')
 
-parser.add_argument('--num_files', type=int, default=3, help='number of files for training data')
+parser.add_argument('--num_files', type=int, default=3, help='number of files for training data (for --task=next_character_prediction)')
 
 parser.add_argument('--train_input_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/inputs_small.pkl', help='directory of train data')
 parser.add_argument('--train_target_directory', type=str, default='/home/amadeu/Desktop/GenomNet_MA/data/targets_small.pkl', help='directory of train data')

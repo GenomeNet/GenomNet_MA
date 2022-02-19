@@ -37,7 +37,6 @@ import gc
 
 from generalNAS_tools.utils import scores_perClass, scores_Overall, pr_aucPerClass, roc_aucPerClass, overall_acc, overall_f1
 from generalNAS_tools.train_and_validate import train, infer
-from randomSearch_and_Hyperband_Tools.utils import mask2geno, mask2switch
 
 
 class Trainer:
@@ -262,8 +261,6 @@ class Trainer:
         self.supernet_mask = list(supernet_mask)
         # supernet_mask = merge(cnn_masks, rnn_masks) # die 5 subnets zusammengefügt, damit er 1 großes supernet hat, welches aus den 100 init_samples/subarchitecturen gebildet wurde
     
-        # self.switches_normal, self.switches_reduce, self.switches_rnn = mask2switch(self.supernet_mask[0], self.supernet_mask[0], self.supernet_mask[1])
-
         # len(subnet_masks)=5 und len(train_loader_sub)=391: erzeugt also eine list mit 391 elementen die eben immer 0,1,2,3,4 (wegen len(subnet_masks) sind)
         self.iterative_indices = list(islice(cycle(list(range(len(self.subnet_masks)))), len(self.train_loader_sub))) 
         # train_loader_sub wird als build_dataloader initialisiert und diese ist eine funktion 2 weiter oben definiert 

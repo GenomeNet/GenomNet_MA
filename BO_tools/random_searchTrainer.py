@@ -15,9 +15,6 @@ import torch.utils
 import torchvision.datasets as dset
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
-import random
-from super_model import geno2mask, merge
-from model_search import RNNModelSearch
 
 from opendomain_utils.ioutils import copy_log_dir
 from opendomain_utils.genotypes import Genotype
@@ -30,19 +27,6 @@ import copy
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
-
-
-
-import numpy as np
-import torch
-import opendomain_utils.training_utils as utils
-import logging
-import torch.nn as nn
-import torch.utils
-import torchvision.datasets as dset
-import torch.backends.cudnn as cudnn
-from torch.autograd import Variable
 import random
 from super_model import geno2mask, merge
 from model_search import RNNModelSearch

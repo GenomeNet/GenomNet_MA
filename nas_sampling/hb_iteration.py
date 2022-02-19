@@ -19,9 +19,7 @@ from generalNAS_tools.utils import scores_perClass, scores_Overall, pr_aucPerCla
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
 import gc
-#from torch.profiler import profile, record_function, ProfilerActivity
 
 import logging
 import sys
@@ -30,6 +28,9 @@ import torch.nn as nn
 import numpy as np
 
 logging = logging.getLogger(__name__)
+
+#####################################
+###### used by SH-NAS
 
 
 def hb_step(train_queue, valid_queue, random_model, rhn, conv, criterion, scheduler, batch_size, optimizer, optimizer_a, architect, unrolled, num_steps, clip_params, report_freq, beta, one_clip, task, budget):
@@ -41,10 +42,7 @@ def hb_step(train_queue, valid_queue, random_model, rhn, conv, criterion, schedu
     valid_acc = []
     
     for epoch in range(budget): 
-        # epoch=0
         logging.info('epoch %d lr %e', epoch, scheduler.get_last_lr()[0])
-        # supernet.drop_path_prob = args.drop_path_prob * epoch / self.epochs
-        # supernet.drop_path_prob = drop_path_prob * epoch / epochs
                                               
         epoch_start = time.time()
         
@@ -69,7 +67,6 @@ def hb_step(train_queue, valid_queue, random_model, rhn, conv, criterion, schedu
             train_acc.append(f1)
     
     
-        # valid_acc, valid_obj = evaluate_architecture(valid_object, random_model, criterion, optimizer, epoch, args.report_freq, args.num_steps) 
         labels, predictions, valid_loss = infer(valid_queue, random_model, criterion, batch_size, num_steps, report_freq, task=task)
     
         labels = np.concatenate(labels)

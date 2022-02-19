@@ -117,21 +117,6 @@ def geno_to_archs(genotypes, ei_scores=None):
         
     return archs
 
-def geno2mask(genotype):
-    des = -1
-    mask = np.zeros((14, 9))
-    
-    op_names, indices = zip(*genotype.normal)
-    for cnt, (name, index) in enumerate(zip(op_names, indices)):
-        if cnt % 2 == 0:
-            des += 1
-            total_state = sum(i+2 for i in range(des))
-        op_idx = PRIMITIVES_cnn.index(name)
-        node_idx = index + total_state
-        mask[node_idx, op_idx] = 1
-    print(mask)
-    return mask
-
 if __name__ == '__main__':
     A = np.array([
         [0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0],

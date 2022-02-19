@@ -9,45 +9,21 @@ Created on Tue Jul 13 12:33:30 2021
 import os
 import sys
 import time
-import glob
 import numpy as np
 import torch
-# import utils
 import logging
 import argparse
 import torch.nn as nn
 import torch.utils
-import torch.nn.functional as F
-import torchvision.datasets as dset
-import torch.backends.cudnn as cudnn
-
-import gc
 
 from generalNAS_tools import utils
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-import csv
-import gc
-#import DeepVirFinder_model as dvf
 import generalNAS_tools.data_preprocessing_new as dp
-import torch
-#from DeepVirFinder_model import model, device, criterion, optimizer, num_motifs, num_classes
-#from data_preprocessing import train_loader, valid_loader, batch_size, num_batches_valid, num_batches_train, valid_y
 
-import torch.nn as nn
-import numpy as np 
-from sklearn.metrics import classification_report
-# precision, recall, f1
-from sklearn.metrics import f1_score, recall_score, precision_score
-# ROC PR, ROC AUC
-from sklearn.metrics import roc_auc_score, auc
-
-from sklearn.metrics import precision_recall_curve
-from generalNAS_tools.utils import scores_perClass, scores_Overall, pr_aucPerClass, roc_aucPerClass, overall_acc, overall_f1
-
-import matplotlib.pyplot as plt
+from generalNAS_tools.utils import overall_acc, overall_f1
 
 
 # from pytorchtools import EarlyStopping
@@ -66,12 +42,11 @@ parser.add_argument('--train_directory', type=str, default='data/deepsea_train/t
 parser.add_argument('--valid_directory', type=str, default='data/deepsea_train/valid.mat', help='file (TF_bindings) or directory (next_character_prediction) of validation data')
 parser.add_argument('--test_directory', type=str, default='data/deepsea_train/test.mat', help='file (TF_bindings) or directory (next_character_prediction) of test data')
 
-parser.add_argument('--num_files', type=int, default=3, help='number of files for training data')
+parser.add_argument('--num_files', type=int, default=3, help='number of files for training data (for --task=next_character_prediction)')
 parser.add_argument('--next_character_predict_character', dest='next_character_prediction', action='store_true', help='only for --task=next_character_prediction: predict single character')
 parser.add_argument('--next_character_predict_sequence', dest='next_character_prediction', action='store_false', help='only for --task=next_character_prediction: predict entire sequence, shifted by one character, using causal convolutions')
 parser.set_defaults(next_character_prediction=True)
 
-# parser.add_argument('--num_motifs', type=int, default=100, help='number of channels') # 320
 parser.add_argument('--model', type=str, required=True, help='Model to use; one of: DanQ, DeepSEA (note case sensitive), NCNet_RR, NCNet_bRR')
 parser.add_argument('--save', type=str, required=True,
                     help='file name postfix to save the labels and predicitons')

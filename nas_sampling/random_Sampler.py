@@ -8,8 +8,21 @@ Created on Fri Jun 25 20:27:50 2021
 
 import random
 import numpy as np
-import time
-from generalNAS_tools.genotypes import OPS_cnn, OPS_rnn, PRIMITIVES_cnn, PRIMITIVES_rnn, Genotype
+from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, Genotype
+
+
+def generate_random_architectures(generate_num):
+    random_architectures = []
+    cnt = 0
+    # es werden zuerst random adj und ops matritzen erzeugt und diese
+    # werden dann einfach als dictionary eingespeichert und jedes dictionary bildet ein element einer liste archs
+    while cnt < generate_num:
+        normal_cnn, _ = sample_architectures()
+        reduction_cnn, rnn = sample_architectures()
+
+        random_architectures.append([normal_cnn, reduction_cnn, rnn])
+        cnt += 1
+    return random_architectures
 
 
 
@@ -78,22 +91,6 @@ def sample_architectures():
     rnn_mask[edge_7, sample_rhn_operations()] = 1  
     
     return cnn_mask, rnn_mask
-
-
-    
-def generate_random_architectures(generate_num):
-    random_architectures = []
-    cnt = 0
-    # es werden zuerst random adj und ops matritzen erzeugt und diese
-    # werden dann einfach als dictionary eingespeichert und jedes dictionary bildet ein element einer liste archs
-    while cnt < generate_num:
-        normal_cnn, _ = sample_architectures()
-        reduction_cnn, rnn = sample_architectures()
-
-        random_architectures.append([normal_cnn, reduction_cnn, rnn])
-        cnt += 1
-    return random_architectures
-
 
 
 ### genotypes

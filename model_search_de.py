@@ -6,29 +6,20 @@ Created on Fri Oct  8 21:50:18 2021
 @author: amadeu
 """
 
-
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-#from genotypes_rnn import PRIMITIVES, STEPS, CONCAT, total_genotype
-from torch.autograd import Variable
-from collections import namedtuple
 from darts_tools.model_de import DARTSCell, RNNModel
 
-import numpy as np
 
-from generalNAS_tools.operations_14_9 import *
-#from genotypes_cnn import PRIMITIVES_cnn
-#from genotypes_cnn import Genotype_cnn
+
 from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, rnn_steps, CONCAT, Genotype
+from darts_tools.comp_aux import compute_positions, activ_fun
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-import torch.autograd.profiler as profiler
 
-from darts_tools.comp_aux import compute_positions, activ_fun
-
-#from torch.profiler import profile, record_function, ProfilerActivity
 
 
 #import cnn_eval
@@ -54,7 +45,6 @@ class DARTSCellSearch(DARTSCell):
 
   def cell(self, x, h_prev, x_mask, h_mask):
       
-    #with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
 
     s0 = self._compute_init_state(x, h_prev, x_mask, h_mask)
     s0 = self.bn(s0)
@@ -99,16 +89,6 @@ class DARTSCellSearch(DARTSCell):
     
     
     return output
-
-#states = torch.rand(8,2,3)
-#offset=0
-#for i in range(8):
-    
-#    for k,name in enumerate(acn[i]):
-#        print(offset)
-#        print(name)
-#        print(states[nodes[offset],:,:])
-#        offset+=1
 
 
 class RNNModelSearch(RNNModel):
@@ -238,7 +218,5 @@ class RNNModelSearch(RNNModel):
       genotype = Genotype(normal=gene_normal, normal_concat=concat, reduce=gene_reduce, reduce_concat=concat,
                                 rnn=gene_rnn, rnn_concat=range(rnn_steps+1)[-CONCAT:])
       
-      # Genotype = namedtuple('Genotype', 'normal normal_concat reduce reduce_concat rnn rnn_concat')
-
       
       return genotype

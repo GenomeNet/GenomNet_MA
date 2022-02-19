@@ -12,6 +12,10 @@ import torch
 import torch.nn as nn
 import math
 
+########### exports:
+# OPS, NorConv, ReLUConvBN, DilConv, SepConv, Identity, Zero, FactorizedReduce
+
+
 #op = OPS[primitive](C, stride, False)
 
 OPS = {
