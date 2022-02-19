@@ -85,12 +85,12 @@ mkdir results/darts_search
 python train_genomicDARTS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --epochs=50 --task='TF_bindings' --save='darts_1' --save_dir=results/darts_search
 ```
 
-### Hyperband-NAS
+### Successive Halving
 
 ```
 mkdir results/hb_search
 
-python train_genomicHyperbandNAS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --epochs=20 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --budget=3 --num_samples=25 --iterations=3 --task='TF_bindings'  --save='hb_1' --save_dir=results/hb_search
+python nas_sampling/train_genomicSH.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --epochs=20 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --budget=3 --num_samples=25 --iterations=3 --task='TF_bindings'  --save='hb_1' --save_dir=results/hb_search
 ```
 
 ### genomeP-DARTS
@@ -101,12 +101,12 @@ mkdir results/pdarts_search
 python train_genomicPDARTS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --epochs=25 --task='TF_bindings' --save='pdarts_1' --save_dir=results/pdarts_search
 ```
 
-### Random search
+### Random Search
 
 ```
 mkdir results/random_search
 
-python train_genomicRandom.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --num_samples=20 --epochs=7 --task='TF_bindings' --save='random_1' --save_dir=results/random_search
+python nas_sampling/train_genomicRS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --num_samples=20 --epochs=7 --task='TF_bindings' --save='random_1' --save_dir=results/random_search
 
 ```
 
@@ -139,7 +139,7 @@ python train_genomicDEP_DARTS.py --num_steps=2000 --seq_size=1000 --batch_size=6
 ```
 mkdir results/osp_search
 
-python train_genomicOSP_NAS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --epochs=60 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --budget=5 --pretrain_epochs=10 --num_init_archs=108 --num_ops=7 --task='TF_bindings' --save='osp_1' --save_dir=results/osp_search
+python nas_sampling/train_genomicOSP_NAS.py --num_steps=2000 --seq_size=1000 --batch_size=64 --train_directory='/home/ascheppa/deepsea/train.mat' --valid_directory='/home/ascheppa/deepsea/valid.mat' --test_directory='/home/ascheppa/deepsea/test.mat' --report_freq=1000 --dropouth=0.05 --dropoutx=0.1 --rhn_lr=8 --epochs=60 --one_clip=True --clip=0.25 --validation=True --report_validation=1 --budget=5 --pretrain_epochs=10 --num_init_archs=108 --num_ops=7 --task='TF_bindings' --save='osp_1' --save_dir=results/osp_search
 ```
 
 
