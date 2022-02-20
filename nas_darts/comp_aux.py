@@ -18,10 +18,6 @@ from generalNAS_tools.genotypes import PRIMITIVES_rnn
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-from darts_tools.genotype_parser import parse_genotype
-
-
-
 
 
 # auxiliary functions to make CNN part faster and enable continuous weight sharing as well as discarded edges
