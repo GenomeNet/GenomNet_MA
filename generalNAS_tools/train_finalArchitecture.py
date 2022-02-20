@@ -16,7 +16,7 @@ import torch.nn as nn
 
 from generalNAS_tools.utils import overall_acc, overall_f1
 
-import model_search as one_shot_model
+import nas_darts.model_search as one_shot_model
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
