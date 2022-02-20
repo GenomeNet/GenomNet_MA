@@ -6,32 +6,23 @@ Created on Fri Oct 29 18:23:04 2021
 @author: amadeu
 """
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from collections import OrderedDict
 
-from generalNAS_tools.operations_14_9 import *
+
+from generalNAS_tools.operations_14_9 import OPS, ReLUConvBN, Identity, FactorizedReduce
 from torch.autograd import Variable
-#from genotypes_cnn import PRIMITIVES_cnn, Genotype_cnn
 
-#from genotypes_rnn import PRIMITIVES, STEPS, CONCAT, total_genotype
-from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, rnn_steps, CONCAT, Genotype
+from generalNAS_tools.genotypes import PRIMITIVES_cnn, rnn_steps
 
 
-#from genotypes_rnn import STEPS
 from generalNAS_tools.utils import mask2d
-from generalNAS_tools.utils import LockedDropout
 
 from operator import itemgetter 
 
 
 from darts_tools.comp_aux import get_state_ind, get_w_pos
-
-import torch.autograd.profiler as profiler
-
-
 
 
 import darts_tools.cnn_eval as cnn_eval
@@ -39,8 +30,6 @@ import darts_tools.cnn_eval as cnn_eval
 INITRANGE = 0.04
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-import math
 
 
 class MixedOp(nn.Module):
@@ -61,10 +50,6 @@ class MixedOp(nn.Module):
                     op = nn.Sequential(op, nn.Dropout(self.p))
                     
                 self.m_ops.add_module(primitive, op)
-            #else:
-            #    op = None
-            #    self.m_ops.add_module(op,op)
-                           
 
                 
     def update_p(self):
@@ -75,22 +60,7 @@ class MixedOp(nn.Module):
                     
     def forward(self, x, weights):
         
-        #m_ops_new = nn.ModuleList()
-        #for op in self.m_ops:
-        #    if op != None:
-        #        m_ops_new.append(op)
-        
-        # return sum(w * op(x) for w, op in zip(weights, self.m_ops)) # vorher "self.m_ops" anstatt "m_ops_new"
-        
-        #if self.switch.count(False)==len(switch[0]): 
-            # falls normal cell
-        #    if self.stride == 1:
-        #         return x.mul(0.)
-        #        return torch.zeros_like(x)
-        #    return torch.zeros_like(x[:,:,::self.stride]) 
-        #else:
-        
-        return sum(w * op(x) for w, op in zip(weights, self.m_ops)) # vorher "self.m_ops" anstatt "m_ops_new"
+        return sum(w * op(x) for w, op in zip(weights, self.m_ops)) # was "self.m_ops" instead of "m_ops_new"
        
 
 class CNN_Cell_search(nn.Module):
@@ -114,14 +84,10 @@ class CNN_Cell_search(nn.Module):
         self.cell_ops = nn.ModuleList()
         
         self.state_idxs = get_state_ind(self._steps, switches)
-        # _steps, switches = 4, switches_normal_cnn
-        # state_idxs = get_state_ind(_steps, switches)
         
         self.w_pos = get_w_pos(self._steps, switches)
-        # w_pos = get_w_pos(_steps, switches)
                 
         switch_count = 0
-        #discard_switch = []
         
         for i in range(self._steps):
          
@@ -143,7 +109,7 @@ class CNN_Cell_search(nn.Module):
                     if reduction_high and j < 2:
                         stride=3
                     
-                    op = MixedOp(C, stride, switch=switches[switch_count], p=self.p) # d.h. für i=1, greift er auf 0te, 1te und 2te zeile von switches
+                    op = MixedOp(C, stride, switch=switches[switch_count], p=self.p) # this means for i=1, this accesses the 0th, 1st and 2nd row of switches
                    
                     self.cell_ops.add_module(str(switch_count), op)
                 #else:
@@ -161,48 +127,20 @@ class CNN_Cell_search(nn.Module):
 
     def forward(self, s0, s1, weights):
         
-        #cell_ops_new = nn.ModuleList()
-        #for op in self.cell_ops:
-        #    if op != None:
-        #        cell_ops_new.append(op)
-        
-        #with profiler.record_function("CNN PASS"):
-        #with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
-
-        
         s0 = self.preprocess0(s0)
         s1 = self.preprocess1(s1)
-        # s0 = preprocess0(s0)
-        # s0 = s1 = torch.rand(2,4,10)
-        # s0  = s0.unsqueeze(0)
-        # s1 = s1.unsqueeze(0)
-        states = [s0, s1]
-   
-        #states = torch.cat([s0,s1], dim=0) # wird zu [4,4,200]
-        #states = torch.cat([states, s.unsqueeze(0)], 0) 
 
-        
-        #for j, h in enumerate(states):
-        #    print(j)
-        #    print(h[0].shape)
-        
+        states = [s0, s1]
+          
     
         for i in range(self._steps):
-            
-            # i=3
-            # s = sum(self.cell_ops[offset+j](h, weights[offset+j]) for j, h in enumerate(states)) # vorher node_states und start anstatt offset
-            # s = sum(self.cell_ops[self.w_pos[i]+j](h, weights[self.w_pos[i]+j]) for j, h in enumerate(itemgetter(*self.state_idxs[i])(states))) # vorher node_states und start anstatt offset
-            s = sum(self.cell_ops[self.w_pos[i]+j](h, weights[self.w_pos[i]+j]) for j, h in enumerate(states) if j in self.state_idxs[i]) # vorher node_states und start anstatt offset
+            s = sum(self.cell_ops[self.w_pos[i]+j](h, weights[self.w_pos[i]+j]) for j, h in enumerate(states) if j in self.state_idxs[i]) # previously node_states and start instead of offset
 
         
      
             states.append(s)
             
         return torch.cat(states[-self._multiplier:], dim=1)
-    
-     
-# h = torch.rand(2,16,200)
-# cell_ops[0][0](h, weights[0])
 
 
 # for evaluation
@@ -214,7 +152,6 @@ class DARTSCell(nn.Module):
     self.dropouth = dropouth
     self.dropoutx = dropoutx
     self.genotype = genotype
-    #self.genotype = genotype[4]
 
     steps = len(self.genotype[4]) if self.genotype is not None else rnn_steps
     self._W0 = nn.Parameter(torch.Tensor(ninp+nhid, 2*nhid).uniform_(-INITRANGE, INITRANGE)) 
@@ -255,12 +192,11 @@ class DARTSCell(nn.Module):
   def _compute_init_state(self, x, h_prev, x_mask, h_mask):
 
     if self.training:
-      xh_prev = torch.cat([x * x_mask, h_prev * h_mask], dim=-1) # entlang der channels zusammenfügen
+      xh_prev = torch.cat([x * x_mask, h_prev * h_mask], dim=-1) # concat along channels
     else:
       xh_prev = torch.cat([x, h_prev], dim=-1)
       
     c0, h0 = torch.split(xh_prev.mm(self._W0), self.nhid, dim=-1) 
-    # c0, h0 = torch.split(xh_prev.mm(_W0), nhid, dim=-1) 
 
     c0 = c0.sigmoid() 
     h0 = h0.tanh() 
@@ -330,20 +266,6 @@ class RNNModel(nn.Module):
             self.num_ops_cnn = sum(switches_normal[0])
             self.num_ops_rnn = sum(switches_rnn[0])
             
-            #self.alphas_normal = alphas_normal
-            #self.alphas_reduce = alphas_reduce
-            #self.alphas_rnn = alphas_rnn
-            
-            #self.weights = alphas_rnn
-            
-            #for rnn in self.rnns:
-            #    rnn.weights = self.weights
-          
-            #self._arch_parameters = [
-            #    self.alphas_normal,
-            #    self.alphas_reduce,
-            #    self.alphas_rnn,
-            #    ]
     
 
         C_curr = stem_multiplier*C
@@ -376,10 +298,9 @@ class RNNModel(nn.Module):
                 if (i==5):
                     reduction_high=True
                     num_neurons = round(num_neurons/3)
-                    #stride=3
                 else:
                     reduction_high=False
-                    num_neurons = round(num_neurons/2) #int(math.ceil(num_neurons/2))
+                    num_neurons = round(num_neurons/2)
                     
                 if search == True:
                     switches = self.switches_reduce
@@ -388,12 +309,6 @@ class RNNModel(nn.Module):
                 else:
                     cell = cnn_eval.CNN_Cell_eval(genotype, C_prev_prev, C_prev, C_curr, reduction, reduction_prev, reduction_high)
 
-                #stride=2
-            #if i in [layers//3, 2*layers//3]:
-            #    C_curr *= 2
-            #    reduction = True
-            #    if search == True:
-            #        switches = self.switches_reduce
             else:
                 reduction = reduction_high = False
                 # reduction = False
@@ -412,9 +327,7 @@ class RNNModel(nn.Module):
         
         out_channels = C_curr*steps
         # self.num_neurons = num_neurons
-        
-        #num_neurons = math.ceil(math.ceil(seq_len / len([layers//3, 2*layers//3])) / 2)
-        
+      
         ninp, nhid, nhidlast = out_channels, out_channels, out_channels
     
             
@@ -424,8 +337,7 @@ class RNNModel(nn.Module):
             # rnn cell for evaluation of final architecture
             assert genotype is not None
             cell_cls = DARTSCell
-            self.rnns = [cell_cls(ninp, nhid, dropouth, dropoutx, genotype)] # 
-            #rnns = [cell_cls(ninp, nhid, dropouth, dropoutx, genotype)]
+            self.rnns = [cell_cls(ninp, nhid, dropouth, dropoutx, genotype)]
 
         else:
             # run search
@@ -452,8 +364,6 @@ class RNNModel(nn.Module):
            self.weights,
            ]
         
-        #print(num_neurons)
-        #print(out_channels)
 
         self.decoder = nn.Linear(num_neurons*out_channels, 925) # because we have flattened 
         
@@ -476,11 +386,6 @@ class RNNModel(nn.Module):
         self.ninp = ninp
         self.nhid = nhid
         self.nhidlast = nhidlast
-        #self.dropout = dropout
-        #self.dropouti = dropouti
-        #self.dropoute = dropoute
-        #self.cell_cls = cell_cls
-        #self._initialize_arch_parameters()
 
         
     def init_weights(self):
@@ -545,18 +450,17 @@ class RNNModel(nn.Module):
         outputs.append(output)
         
         output = output.permute(1,0,2)
-        #print(x.shape) # [250, 2, 128]
+        # output.shape: [250, 2, 128]
         # flatten the RNN output
         x = torch.flatten(output, start_dim= 1) 
         
         x = self.dropout_lin(x)
     
-        #print(x.shape) # [2,32000]
+        # x.shape: [2,32000]
         # linear layer
         x = self.decoder(x) 
         
         # dropout layer
-        # x = self.dropout_lin(x)
         
         x = self.relu(x)
         

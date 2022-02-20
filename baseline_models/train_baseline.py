@@ -29,35 +29,42 @@ from generalNAS_tools.utils import overall_acc, overall_f1
 # from pytorchtools import EarlyStopping
 
 parser = argparse.ArgumentParser("train_baseline")
-parser.add_argument('--batch_size', type=int, default=100, help='batch size')
-parser.add_argument('--seq_size', type=int, default=1000, help='input sequence size') # 200 or 1000
-parser.add_argument('--learning_rate', type=float, default=0.001, help='init learning rate') # default RMSprob
-parser.add_argument('--epochs', type=int, default=10, help='num of training epochs') # min 60 but until convergence
-# parser.add_argument('--test_epochs', type=int, default=1, help='num of testing epochs')
 
 parser.add_argument('--task', type=str, default='TF_bindings', help='defines the task: next_character_prediction (not fully implemented!) or TF_bindings (default)')
+
+parser.add_argument('--model', type=str, required=True, help='Model to use; one of: DanQ, DeepSEA (note case sensitive), NCNet_RR, NCNet_bRR')
+
+parser.add_argument('--learning_rate', type=float, default=0.001, help='init learning rate') # default RMSprob
+
 parser.add_argument('--num_steps', type=int, default=3000, help='number of iterations per epoch')
+parser.add_argument('--epochs', type=int, default=10, help='num of training epochs') # min 60 but until convergence
+
+parser.add_argument('--improv', type=float, default=0, help='minimum change to define an improvement for early stopping; default 0')
+parser.add_argument('--patience', type=int, default=0, help='how many epochs with no improvement after which training will be stopped; default 0: disabled.')
+
+
+parser.add_argument('--batch_size', type=int, default=100, metavar='N', help='batch size')
+
 
 parser.add_argument('--train_directory', type=str, default='data/deepsea_train/train.mat', help='file (TF_bindings) or directory (next_character_prediction) of training data')
 parser.add_argument('--valid_directory', type=str, default='data/deepsea_train/valid.mat', help='file (TF_bindings) or directory (next_character_prediction) of validation data')
 parser.add_argument('--test_directory', type=str, default='data/deepsea_train/test.mat', help='file (TF_bindings) or directory (next_character_prediction) of test data')
 
-parser.add_argument('--num_files', type=int, default=3, help='number of files for training data (for --task=next_character_prediction)')
+parser.add_argument('--seq_size', type=int, default=1000, help='input sequence size') # 200 or 1000
+
 parser.add_argument('--next_character_predict_character', dest='next_character_prediction', action='store_true', help='only for --task=next_character_prediction: predict single character')
 parser.add_argument('--next_character_predict_sequence', dest='next_character_prediction', action='store_false', help='only for --task=next_character_prediction: predict entire sequence, shifted by one character, using causal convolutions')
 parser.set_defaults(next_character_prediction=True)
 
-parser.add_argument('--model', type=str, required=True, help='Model to use; one of: DanQ, DeepSEA (note case sensitive), NCNet_RR, NCNet_bRR')
-parser.add_argument('--save', type=str, required=True,
-                    help='file name postfix to save the labels and predicitons')
-parser.add_argument('--save_dir', type=str, required=True,
-                    help='path to save the labels and predicitons')
-parser.add_argument('--model_path', type=str, required=True,
-                    help='path to save the trained model')
+parser.add_argument('--num_files', type=int, default=3, help='number of files for training data (for --task=next_character_prediction)')
+
 
 parser.add_argument('--report_validation', type=int, default=1, help='validation report period; default 1 (every epoch)')
-parser.add_argument('--improv', type=float, default=0, help='minimum change to define an improvement for early stopping; default 0')
-parser.add_argument('--patience', type=int, default=0, help='how many epochs with no improvement after which training will be stopped; default 0: disabled.')
+
+parser.add_argument('--save', type=str,  default='search', help='file name postfix to save the labels and predicitons')
+parser.add_argument('--save_dir', type=str,  default= 'test_search', help='path to save the labels and predicitons')
+parser.add_argument('--model_path', type=str, required=True, help='path to save the trained model')
+
 args = parser.parse_args()
 
 

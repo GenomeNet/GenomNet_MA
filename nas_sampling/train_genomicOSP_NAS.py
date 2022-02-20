@@ -33,72 +33,67 @@ from nas_sampling.hyperband_final_tools import final_stage_run
 
 
 parser = argparse.ArgumentParser(description='DARTS for genomic Data')
+
+parser.add_argument('--task', type=str, default='TF_bindings', help='defines the task: next_character_prediction (not fully implemented!) or TF_bindings (default)')
+
+parser.add_argument('--seed', type=int, default=3, help='random seed')
+
 parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
 parser.add_argument('--cnn_lr', type=float, default=0.025, help='learning rate for CNN part')
 parser.add_argument('--cnn_weight_decay', type=float, default=3e-4, help='weight decay for CNN part')
 parser.add_argument('--rhn_lr', type=float, default=2, help='learning rate for RHN part')
 parser.add_argument('--rhn_weight_decay', type=float, default=5e-7, help='weight decay for RHN part')
 
-parser.add_argument('--num_ops', type=int, default=4, help='number of operations which are evaluated after budget')
-parser.add_argument('--pretrain_epochs', type=int, default=5, help='budget/epochs after operations are discarded')
-parser.add_argument('--budget', type=int, default=1, help='budget/epochs after operations are discarded')
-parser.add_argument('--num_init_archs', type=int, default=108, help='build the initialized supermodel with a certain number of subarchitctures')
+parser.add_argument('--one_clip', dest='one_clip', action='store_true', help='use --clip value for both cnn and rhn gradient clipping (default).')
+parser.add_argument('--no-one_clip', dest='one_clip', action='store_false', help='disable one_clip: use --conv_clip and --rhn_clip')
+parser.set_defaults(one_clip=True)
+parser.add_argument('--clip', type=float, default=0.25, help='gradient clipping when --one-clip is given')
+parser.add_argument('--conv_clip', type=float, default=5, help='gradient clipping of convs')
+parser.add_argument('--rhn_clip', type=float, default=0.25, help='gradient clipping of lstms')
 
-
-parser.add_argument('--validation', dest='validation', action='store_true', help='do validation (default)')
-parser.add_argument('--no-validation', dest='validation', action='store_false', help='no validation; disables --validation')
-parser.set_defaults(validation=True)
-
-parser.add_argument('--report_validation', type=int, default=1, help='validation report period; default 1 (every epoch)')
+parser.add_argument('--dropouth', type=float, default=0.25, help='dropout for hidden nodes in rnn layers (0 = no dropout)')
+parser.add_argument('--dropoutx', type=float, default=0.75, help='dropout for input nodes in rnn layers (0 = no dropout)')
+parser.add_argument('--beta', type=float, default=1e-3, help='beta slowness regularization applied on RNN activiation (beta = 0 means no regularization)')
 
 parser.add_argument('--num_steps', type=int, default=2000, help='number of iterations per epoch')
+parser.add_argument('--epochs', type=int, default=60, help='epochs of the cosine annealing schedule. Note the actual number of epochs per round is determined by --budget')
+parser.add_argument('--budget', type=int, default=1, help='budget/epochs after operations are discarded')
+parser.add_argument('--pretrain_epochs', type=int, default=5, help='budget/epochs after operations are discarded')
+
+parser.add_argument('--steps', type=int, default=4, help='total number of Nodes')
+
+parser.add_argument('--init_channels', type=int, default=8, help='num of init channels')
+parser.add_argument('--layers', type=int, default=6, help='total number of layers')
+parser.add_argument('--batch_size', type=int, default=100, metavar='N', help='batch size')
+
+
+parser.add_argument('--num_init_archs', type=int, default=108, help='build the initialized supermodel with a certain number of subarchitctures')
+parser.add_argument('--num_ops', type=int, default=4, help='number of operations which are evaluated after budget')
+
 
 parser.add_argument('--train_directory', type=str, default='data/deepsea_train/train.mat', help='file (TF_bindings) or directory (next_character_prediction) of training data')
 parser.add_argument('--valid_directory', type=str, default='data/deepsea_train/valid.mat', help='file (TF_bindings) or directory (next_character_prediction) of validation data')
 parser.add_argument('--test_directory', type=str, default='data/deepsea_train/test.mat', help='file (TF_bindings) or directory (next_character_prediction) of test data')
 
-parser.add_argument('--task', type=str, default='TF_bindings', help='defines the task: next_character_prediction (not fully implemented!) or TF_bindings (default)')
+parser.add_argument('--seq_size', type=int, default=1000, help='input sequence size')
 
-parser.add_argument('--num_files', type=int, default=3, help='number of files for training data (for --task=next_character_prediction)')
-
-parser.add_argument('--seq_size', type=int, default=1000, help='sequence length')
 parser.add_argument('--next_character_predict_character', dest='next_character_prediction', action='store_true', help='only for --task=next_character_prediction: predict single character')
 parser.add_argument('--next_character_predict_sequence', dest='next_character_prediction', action='store_false', help='only for --task=next_character_prediction: predict entire sequence, shifted by one character, using causal convolutions')
 parser.set_defaults(next_character_prediction=True)
 
-parser.add_argument('--one_clip', dest='one_clip', action='store_true', help='use --clip value for both cnn and rhn gradient clipping (default).')
-parser.add_argument('--no-one_clip', dest='one_clip', action='store_false', help='disable one_clip: use --conv_clip and --rhn_clip')
-parser.set_defaults(one_clip=True)
+parser.add_argument('--num_files', type=int, default=3, help='number of files for training data (for --task=next_character_prediction)')
 
-parser.add_argument('--clip', type=float, default=0.25, help='gradient clipping when --one-clip is given')
-parser.add_argument('--conv_clip', type=float, default=5, help='gradient clipping of convs')
-parser.add_argument('--rhn_clip', type=float, default=0.25, help='gradient clipping of lstms')
 
-parser.add_argument('--init_channels', type=int, default=8, help='num of init channels')
-parser.add_argument('--layers', type=int, default=6, help='total number of layers')
-parser.add_argument('--steps', type=int, default=4, help='total number of Nodes')
+parser.add_argument('--report_freq', type=int, default=1, metavar='N', help='report interval')
 
-parser.add_argument('--epochs', type=int, default=60,
-                    help='epochs of the cosine annealing schedule. Note the actual number of epochs per round is determined by --budget')
-parser.add_argument('--batch_size', type=int, default=2, metavar='N',
-                    help='batch size')
-parser.add_argument('--dropouth', type=float, default=0.25,
-                    help='dropout for hidden nodes in rnn layers (0 = no dropout)')
-parser.add_argument('--dropoutx', type=float, default=0.75,
-                    help='dropout for input nodes in rnn layers (0 = no dropout)')
+parser.add_argument('--report_validation', type=int, default=1, help='validation report period; default 1 (every epoch)')
+parser.add_argument('--validation', dest='validation', action='store_true', help='do validation (default)')
+parser.add_argument('--no-validation', dest='validation', action='store_false', help='no validation; disables --validation')
+parser.set_defaults(validation=True)
 
-parser.add_argument('--seed', type=int, default=3,
-                    help='random seed')
-parser.add_argument('--report_freq', type=int, default=1, metavar='N',
-                    help='report interval')
+parser.add_argument('--save', type=str,  default='search', help='file name postfix to save the labels and predicitons')
+parser.add_argument('--save_dir', type=str,  default= 'test_search', help='path to save the labels and predicitons')
 
-parser.add_argument('--beta', type=float, default=1e-3,
-                    help='beta slowness regularization applied on RNN activiation (beta = 0 means no regularization)')
-
-parser.add_argument('--save', type=str,  default='search',
-                    help='file name postfix to save the labels and predicitons')
-parser.add_argument('--save_dir', type=str,  default= 'test_search',
-                    help='path to save the labels and predicitons')
 args = parser.parse_args()
 
 
