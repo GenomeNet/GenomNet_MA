@@ -15,8 +15,6 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 from generalNAS_tools.utils import repackage_hidden, create_exp_dir, save_checkpoint 
 from  generalNAS_tools import utils
 
-import darts_tools.architect
-
 import gc
 
 import logging

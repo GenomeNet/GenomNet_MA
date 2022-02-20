@@ -6,9 +6,10 @@ Created on Tue Mar 16 10:30:15 2021
 @author: amadeu
 """
 
+## used by DARTS
+
 import torch
 import numpy as np
-import torch.nn as nn
 from torch.autograd import Variable
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -43,20 +44,18 @@ class Architect(object):
     self.criterion = criterion
 
   def _compute_unrolled_model(self, hidden, input, target, eta):
-    # hidden ,input, target, eta =  hidden_train, input_train, target_train, eta
     loss, hidden_next = self.model._loss(hidden, input, target, self.criterion) #train_loss
     theta = _concat(self.model.parameters()).data #
     grads = torch.autograd.grad(loss, self.model.parameters())
     clip_coef = _clip(grads, self.network_clip)
     dtheta = _concat(grads).data + self.network_weight_decay*theta
-    unrolled_model = self._construct_model_from_theta(theta.sub_(eta, dtheta)) # model mit 1nem optimization step forward w'
+    unrolled_model = self._construct_model_from_theta(theta.sub_(eta, dtheta)) # model with optimization step forward w'
     return unrolled_model, clip_coef
 
   def step(self,
           hidden_train, input_train, target_train,
           hidden_valid, input_valid, target_valid,
           network_optimizer, unrolled):
-          # hidden_train, input_train, target_train, hidden_valid, input_valid, target_valid, network_optimizer =  hidden[s_id], cur_data, cur_targets, hidden_valid[s_id], cur_data_valid, cur_targets_valid, optimizer
     eta = network_optimizer.param_groups[0]['lr']
     self.optimizer.zero_grad()
     if unrolled:

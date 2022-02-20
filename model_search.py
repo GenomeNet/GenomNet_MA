@@ -67,9 +67,6 @@ class DARTSCellSearch(DARTSCell):
         states = torch.cat([states, s.unsqueeze(0)], 0) 
     output = torch.mean(states[-CONCAT:], dim=0) 
     return output
-    
-    
-    return output
 
 
 class RNNModelSearch(RNNModel):

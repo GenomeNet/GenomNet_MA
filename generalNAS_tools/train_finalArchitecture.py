@@ -145,8 +145,6 @@ def main():
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
   
-    # model = one_shot_model.RNNModel(args.seq_size, args.dropouth, args.dropoutx, args.init_channels, 919, args.layers, args.steps, 4, 3, False, args.drop_path_prob, genotype=np.load(args.genotype_file, allow_pickle=True), task=args.task).to(device)
-  
     if (args.task == "next_character_prediction"):
         import generalNAS_tools.data_preprocessing_new as dp
       
@@ -180,17 +178,6 @@ def main():
         model = torch.load(os.path.join(args.save, 'model.pt'))
     else:      
         genotype = np.load(args.genotype_file, allow_pickle=True)
-    
-        # my_gene = genotype
-        # his_gene = genotype
-        
-        #supernet_mask = [cnn_mask, cnn_mask, rhn_mask]
-
-        #from generalNAS_tools.train_and_validate_HB import train, infer
-        
-        #model = one_shot_model.RNNModelSearch(args.seq_size, args.dropouth, args.dropoutx,
-        #                          args.init_channels, num_classes, args.layers, args.steps, multiplier, stem_multiplier,  
-        #                          True, 0.2, None, args.task, supernet_mask).to(device)
     
         model = one_shot_model.RNNModel(args.seq_size, args.dropouth, args.dropoutx,
                             args.init_channels, num_classes, args.layers, args.steps, multiplier, stem_multiplier,

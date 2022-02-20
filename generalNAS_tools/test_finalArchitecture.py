@@ -17,18 +17,13 @@ import logging
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-#from architect import Architect
+
 import time
 
-#import genotypes_rnn
-#import genotypes_cnn
 from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, rnn_steps, CONCAT, Genotype
 
 import gc
 
-#import data
-# import model_searchCNN as oneshot_model
-import model_search as one_shot_model
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -38,8 +33,6 @@ from generalNAS_tools import utils
 import generalNAS_tools.data_preprocessing_new as dp
 
 from generalNAS_tools.train_and_validate import train, infer
-
-import darts_tools.cnn_eval
 
 
 

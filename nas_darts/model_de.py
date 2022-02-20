@@ -66,7 +66,6 @@ class MixedOp(nn.Module):
        
 
 class CNN_Cell_search(nn.Module):
-    # steps, multiplier, C_prev_prev, C_prev, C, reduction, reduction_prev, reduction_high, switches, p =4,4,8,8,8,False,False,False,switches_normal_cnn, 0.0
 
     def __init__(self, steps, multiplier, C_prev_prev, C_prev, C, reduction, reduction_prev, switches, p, reduction_high):
         super(CNN_Cell_search, self).__init__()
@@ -109,13 +108,11 @@ class CNN_Cell_search(nn.Module):
                     op = MixedOp(C, stride, switch=switches[switch_count], p=self.p) # this means for i=1, this accesses the 0th, 1st and 2nd row of switches
                    
                     self.cell_ops.append(op)
-                # else:
-                #    discard_edge += 1
                     
                 switch_count += 1
     
     def update_p(self):
-        for op in self.cell_ops:# cell_ops[0]
+        for op in self.cell_ops:
             op.p = self.p
             op.update_p()
 
@@ -158,7 +155,7 @@ class DARTSCell(nn.Module):
   def forward(self, inputs, hidden):
   
     
-    T, B = inputs.size(0), inputs.size(1) # 10,2
+    T, B = inputs.size(0), inputs.size(1)
 
     if self.training:
      
@@ -232,9 +229,6 @@ class DARTSCell(nn.Module):
 
 
 
-# sp=0
-# C, num_classes, layers, criterion, switches_normal, switches_reduce, p, steps, multiplier, stem_multiplier = args.init_channels + int(add_width[sp]), num_classes, args.layers + int(add_layers[sp]), criterion, switches_normal_cnn, switches_reduce_cnn, float(drop_rate[sp]), 4,4,3
-# _C, _num_classes, _layers, _criterion, switches_normal, switches_reduce, p, _steps, _multiplier, stem_multiplier = args.init_channels + int(add_width[sp]), num_classes, args.layers + int(add_layers[sp]), criterion, switches_normal_cnn, switches_reduce_cnn, float(drop_rate[sp]), 4,4,3
 class RNNModel(nn.Module):
 
     def __init__(self, seq_len, 
@@ -302,7 +296,6 @@ class RNNModel(nn.Module):
 
             else:
                 reduction = reduction_high = False
-                # reduction = False
                 if search == True:
                     switches = self.switches_normal
                     cell = CNN_Cell_search(steps, multiplier, C_prev_prev, C_prev, C_curr, reduction, reduction_prev, switches, self.p, reduction_high) 
@@ -317,7 +310,6 @@ class RNNModel(nn.Module):
         self.drop_path_prob = drop_path_prob
         
         out_channels = C_curr*steps
-        # self.num_neurons = num_neurons
         
         ninp, nhid, nhidlast = out_channels, out_channels, out_channels
     
@@ -415,10 +407,8 @@ class RNNModel(nn.Module):
         # RHN expect [seq_len, batch_size, features]
         # [2, 256, 50]
         x = s1.permute(2,0,1)
-        # emb = torch.reshape(s1, (num_neurons,batch_size,out_channels)) 
         
-        # x = torch.rand(10,2,256)
-        # hidden = hidden[0] # [1,2,256] nur mit 0en: 1 weil für jeden timestep, 2 für batchsize und 256 für channels
+        # hidden = hidden[0] # [1,2,256] only zeroes: 1 because for every timestep, 2 for batchsize and 256 for channels
 
         raw_output = x 
         new_hidden = []

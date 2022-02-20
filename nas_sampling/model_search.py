@@ -33,12 +33,12 @@ class DARTSCellSearch(DARTSCell):
   def cell(self, x, h_prev, x_mask, h_mask, rnn_mask):
       
     s0 = self._compute_init_state(x, h_prev, x_mask, h_mask)
-    #print(s0.shape)
     s0 = self.bn(s0)
-   
-    offset = 0
+
     states = s0.unsqueeze(0) 
     
+    offset = 0
+
     for i in range(rnn_steps):
        
         if self.training: 
@@ -53,8 +53,6 @@ class DARTSCellSearch(DARTSCell):
         c = c.sigmoid()
         
         s = torch.zeros_like(s0) # [2,256]
-        #s = s.unsqueeze(0)
-        #unweighteds = [states + c * (torch.tanh(h) - states), states + c * (torch.sigmoid(h) - states), states + c * (torch.relu(h) - states), states + c * (h - states)]
         for k, name in enumerate(PRIMITIVES_rnn):
 
             if (rnn_mask[offset:offset+i+1, k]==0).all():
@@ -64,7 +62,7 @@ class DARTSCellSearch(DARTSCell):
             
             idxs = np.nonzero(rnn_mask[offset:offset+i+1, k])[0]
          
-            unweighted = states + c * (fn(h) - states) # states [3,2,256], wobei s immer [2,256]
+            unweighted = states + c * (fn(h) - states) # states [3,2,256], where s always [2,256]
             s += torch.sum(unweighted[idxs, :, :], dim=0)
            
         s = self.bn(s) 
