@@ -26,17 +26,11 @@ from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, rnn_steps
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-import generalNAS_tools.utils
 from generalNAS_tools.train_and_validate import train, infer
 
 from generalNAS_tools import utils
 
-from darts_tools.auxiliary_functions import *
-
 from generalNAS_tools.utils import overall_acc, overall_f1
-
-
-
 
 
 parser = argparse.ArgumentParser(description='DARTS for genomic Data')

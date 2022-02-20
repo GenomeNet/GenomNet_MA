@@ -6,6 +6,8 @@ Created on Sat Jun 19 12:52:01 2021
 @author: amadeu
 """
 
+# used by *P-DARTS, but not DARTS
+## exports: parse_network, get_min_k, get_max_k, get_min_k_no_zero, check_sk_number, delete_min_sk_prob, keep_1_on, keep_2_branches
 
 import copy
 
@@ -38,11 +40,6 @@ def parse_network(switches_normal_cnn, switches_reduce_cnn, switches_rnn):
     
     concat = range(2, 6)
     
-    #genotype_cnn = Genotype_cnn(
-    #    normal=gene_normal, normal_concat=concat, 
-    #    reduce=gene_reduce, reduce_concat=concat
-    #)
-    
     def _parse_switches_rnn(switches):
         n = 1
         start = 0
@@ -69,7 +66,7 @@ def parse_network(switches_normal_cnn, switches_reduce_cnn, switches_rnn):
             
     return genotype
 
-
+## used here and in discard_operations
 def get_min_k(input_in, k):
     input = copy.deepcopy(input_in)
     index = []
@@ -79,7 +76,7 @@ def get_min_k(input_in, k):
         input[idx] = 1
     return index
 
-
+## used in discard_operations
 def get_max_k(input_in, k):
     input = copy.deepcopy(input_in)
     index = []
@@ -89,8 +86,7 @@ def get_max_k(input_in, k):
         input[idx] = -1
     return index
 
-# drop = get_min_k_no_zero(normal_prob[i-switch_count, :], idxs, num_to_drop[sp])
-# w_in, idxs, k = normal_prob[i-switch_count, :], idxs, 2
+## used in discard_operations
 def get_min_k_no_zero(w_in, idxs, k):
     w = copy.deepcopy(w_in)
     index = []
@@ -112,14 +108,6 @@ def get_min_k_no_zero(w_in, idxs, k):
     return index
 
         
-def logging_switches(switches):
-    for i in range(len(switches)):
-        ops = []
-        for j in range(len(switches[i])):
-            if switches[i][j]:
-                ops.append(PRIMITIVES_cnn[j])
-        logging.info(ops)
-   
 # switches_normal_cnn
 def check_sk_number(switches):
     count = 0
@@ -131,8 +119,6 @@ def check_sk_number(switches):
     return count
 
 
-# switches_in, switches_bk, probs_in = switches_normal_cnn, switches_normal_2, normal_prob
-# switches_normal_cnn, switches_normal_2, normal_prob
 def delete_min_sk_prob(switches_in, switches_bk, probs_in): 
     
     def _get_sk_idx(switches_in, switches_bk, k):
@@ -150,11 +136,10 @@ def delete_min_sk_prob(switches_in, switches_bk, probs_in):
     sk_prob = [1.0 for i in range(len(switches_bk))] # 14 elements with values with 1.0
     disc_edg_cnt = 0
     for i in range(len(switches_in)): 
-        # i=8
         if switches_bk[i].count(False) != len(switches_bk[i]):
             idx = _get_sk_idx(switches_in, switches_bk, i)  
-            if not idx == -1: # then there is scip connect
-                sk_prob[i] = probs_out[i-disc_edg_cnt][idx] # define sk_prob element with the corresponding scip connect alpha value
+            if not idx == -1: # then there is skip connect
+                sk_prob[i] = probs_out[i-disc_edg_cnt][idx] # define sk_prob element with the corresponding skip connect alpha value
         else:
             disc_edg_cnt += 1
             
@@ -224,4 +209,4 @@ def keep_2_branches(switches_in, probs): # in order to have only 2 edges per nod
         if not i in keep:
             for j in range(len(PRIMITIVES_cnn)):
                 switches[i][j] = False  
-    return switches  
+    return switches

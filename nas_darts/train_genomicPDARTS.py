@@ -19,27 +19,17 @@ import copy
 
 import model_search as one_shot_model
 
-from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, rnn_steps, CONCAT, Genotype
-# from genotypes_rnn import PRIMITIVES, STEPS, CONCAT, total_genotype
-
-# import generalNAS_tools.data_preprocessing_new as dp
-# import general_tools.data_preprocessing_new
-
-# sys.path
+from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, rnn_steps
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-import generalNAS_tools.utils
 from generalNAS_tools.train_and_validate import train, infer
 
 from generalNAS_tools import utils
 
 from darts_tools.final_stage_run import final_stage_genotype
-from darts_tools.auxiliary_functions import *
+from darts_tools.auxiliary_functions import parse_network, check_sk_number, delete_min_sk_prob, keep_1_on, keep_2_branches
 from darts_tools.discard_operations import discard_cnn_ops, discard_rhn_ops
-
-
-from torch.autograd import Variable
 
 from generalNAS_tools.utils import overall_acc, overall_f1
 
