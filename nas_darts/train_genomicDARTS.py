@@ -120,12 +120,6 @@ def main():
       
     logging.info("args = %s", args)
            
-    #train_object, valid_object, num_classes = dp.data_preprocessing(train_directory = args.train_directory, valid_directory = args.valid_directory, num_files=args.num_files,
-    #        seq_size = args.seq_len, batch_size=args.batch_size, next_character=args.next_character_prediction)
-    
-    #_, valid_data, num_classes = dp.data_preprocessing(train_directory = args.train_directory, valid_directory = args.valid_directory, num_files=args.num_files,
-    #        seq_size = args.seq_len, batch_size=args.batch_size, next_character=args.next_character_prediction)
-    
     if args.task == "next_character_prediction":
         
         import generalNAS_tools.data_preprocessing_new as dp
@@ -142,19 +136,10 @@ def main():
         
         import generalNAS_tools.data_preprocessing_TF as dp
         
-        # train_queue, valid_queue, test_queue = dp.data_preprocessing(args.train_input_directory, args.valid_input_directory, args.test_input_directory, args.train_target_directory, args.valid_target_directory, args.test_target_directory, args.batch_size)
         train_queue, valid_queue, test_queue = dp.data_preprocessing(args.train_directory, args.valid_directory, args.test_directory, args.batch_size)
         
         criterion = nn.BCELoss().to(device)
         
-        # from generalNAS_tools.custom_loss_functions import weighted_BCE
-        
-        # criterion = weighted_BCE(train_queue, 30000).to(device)
-        # criterion = nn.BCEWithLogitsLoss(reduction='none').to(device)
-        # torch.mean(criterion.positive_weights)
-#        from generalNAS_tools.custom_loss_functions import get_criterion
-#        criterion = get_criterion(train_queue, 30000)
-
         num_classes = 919
     
         
@@ -182,8 +167,8 @@ def main():
           
     num_ops_cnn = sum(switches_normal_cnn[0])
            
-    alphas_normal = nn.Parameter(torch.FloatTensor(1e-3*np.random.randn(k_cnn, num_ops_cnn))) # vorher: k_cnn, num_ops_cnn
-    alphas_reduce = nn.Parameter(torch.FloatTensor(1e-3*np.random.randn(k_cnn, num_ops_cnn))) # vorher: k_cnn, num_ops_cnn
+    alphas_normal = nn.Parameter(torch.FloatTensor(1e-3*np.random.randn(k_cnn, num_ops_cnn))) # was: k_cnn, num_ops_cnn
+    alphas_reduce = nn.Parameter(torch.FloatTensor(1e-3*np.random.randn(k_cnn, num_ops_cnn))) # was: k_cnn, num_ops_cnn
            
     k_rhn = sum(i for i in range(1, rnn_steps+1))             
     num_ops_rhn = sum(switches_rnn[0])
@@ -197,11 +182,7 @@ def main():
                               args.init_channels, num_classes, args.layers, args.steps, multiplier, stem_multiplier,  
                               True, 0.2, None, args.task, 
                               switches_normal_cnn, switches_reduce_cnn, switches_rnn, 0.0, alphas_normal, alphas_reduce, alphas_rnn) 
-                                  # float(drop_rate[sp])) 
                                   
-    # old_dict = model.state_dict()
-
-        
     model = model.to(device)
     
     
@@ -210,14 +191,9 @@ def main():
     conv = []
     rhn = []
     for name, param in model.named_parameters():
-        #print(name)
-        #if 'stem' or 'preprocess' or 'conv' or 'bn' or 'fc' in name:
        if 'rnns' in name:
-           #print(name)
            rhn.append(param)
-       #elif 'decoder' in name:
        else:
-           #print(name)
            conv.append(param)
     
     optimizer = torch.optim.SGD([{'params':conv}, {'params':rhn}], lr=args.cnn_lr, weight_decay=args.cnn_weight_decay)
@@ -227,18 +203,11 @@ def main():
     optimizer.param_groups[1]['lr'] = args.rhn_lr
     optimizer.param_groups[1]['weight_decay'] = args.rhn_weight_decay
     
-    
-    # optimizer for alpha updates
-    #optimizer_a = torch.optim.Adam(model.arch_parameters(), # model.module.arch_parameters()
-    #            lr=args.arch_learning_rate, betas=(0.5, 0.999), weight_decay=args.arch_weight_decay)
-    
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             optimizer, float(args.epochs), eta_min=args.learning_rate_min)
-    #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.epochs))
     
     sm_dim = -1
     epochs = args.epochs
-    #eps_no_arch = eps_no_archs[sp]
     scale_factor = 0.2
     
     architect = Architect(model, criterion, args)
@@ -247,10 +216,8 @@ def main():
     valid_losses = []
     
     train_acc = []
-    #all_predictions_train = []
     
     valid_acc = []
-    #all_predictions_valid = []
     
     time_per_epoch = []
     
@@ -262,7 +229,6 @@ def main():
     all_predictions_valid = []
 
     for epoch in range(epochs):
-            # epoch=0
             train_start = time.strftime("%Y%m%d-%H%M")
    
             lr = scheduler.get_last_lr()[0]
@@ -273,9 +239,6 @@ def main():
                 labels, predictions, train_loss = train(train_queue, valid_queue, model, rhn, conv, criterion, optimizer, None, architect, args.unrolled, lr, epoch, args.num_steps, clip_params, args.report_freq, args.beta, args.one_clip, train_arch=False, pdarts=False, task=args.task)
             else:
                 labels, predictions, train_loss = train(train_queue, valid_queue, model, rhn, conv, criterion, optimizer, None, architect, args.unrolled, lr, epoch, args.num_steps, clip_params, args.report_freq, args.beta, args.one_clip, train_arch=True, pdarts=False, task=args.task)
-
-                # labels, predictions, train_loss = train(train_queue, valid_queue, model, rhn, conv, criterion, optimizer, optimizer_a, None, args.unrolled, lr, epoch, args.num_steps, clip_params, args.report_freq, args.beta, args.one_clip, train_arch=True, pdarts=True, task=args.task)
-                # model.arch_parameters()
 
             
             labels = np.concatenate(labels)
@@ -295,8 +258,6 @@ def main():
                 train_acc.append(f1)
 
      
-            #all_labels_train.append(labels)
-            #all_predictions_train.append(predictions)
             train_losses.append(train_loss)
             epoch_end = time.time()
             time_per_epoch.append(epoch_end)
@@ -306,13 +267,11 @@ def main():
             if args.validation == True:
                 if epoch % args.report_validation == 0:
                     labels, predictions, valid_loss = infer(valid_queue, model, criterion, args.batch_size, args.num_steps, args.report_freq, task=args.task)
-                    # logging.info('Valid_acc %f', valid_acc)
                     
                     labels = np.concatenate(labels)
                     predictions = np.concatenate(predictions)
                     
                     valid_losses.append(valid_loss)
-                    #all_labels_valid.append(labels)
                     logging.info('| epoch {:3d} | valid loss {:5.2f}'.format(epoch, valid_loss))
 
             
@@ -338,12 +297,6 @@ def main():
     all_labels_valid.append(labels)
     all_predictions_valid.append(predictions)
     
-    # labels_valid_file = 'labels_valid-{}'.format(args.save)
-    # np.save(os.path.join(args.save_dir, labels_valid_file), all_labels_valid)
-
-    # predictions_valid_file = 'predictions_valid-{}'.format(args.save)
-    # np.save(os.path.join(args.save_dir, predictions_valid_file), all_predictions_valid)
-
     
     genotype_file = 'darts_geno-{}'.format(args.save)
     np.save(os.path.join(args.save_dir, genotype_file), genotype)

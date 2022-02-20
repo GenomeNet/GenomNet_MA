@@ -122,12 +122,6 @@ def main():
       
     logging.info("args = %s", args)
            
-    #train_object, valid_object, num_classes = dp.data_preprocessing(train_directory = args.train_directory, valid_directory = args.valid_directory, num_files=args.num_files,
-    #        seq_size = args.seq_len, batch_size=args.batch_size, next_character=args.next_character_prediction)
-    
-    #_, valid_data, num_classes = dp.data_preprocessing(train_directory = args.train_directory, valid_directory = args.valid_directory, num_files=args.num_files,
-    #        seq_size = args.seq_len, batch_size=args.batch_size, next_character=args.next_character_prediction)
-    
     if args.task == "next_character_prediction":
         
         import generalNAS_tools.data_preprocessing_new as dp
@@ -144,7 +138,6 @@ def main():
         
         import generalNAS_tools.data_preprocessing_TF as dp
         
-        # train_queue, valid_queue, test_queue = dp.data_preprocessing(args.train_input_directory, args.valid_input_directory, args.test_input_directory, args.train_target_directory, args.valid_target_directory, args.test_target_directory, args.batch_size)
         train_queue, valid_queue, test_queue = dp.data_preprocessing(args.train_directory, args.valid_directory, args.test_directory, args.batch_size)
 
         criterion = nn.BCELoss().to(device)
@@ -166,14 +159,8 @@ def main():
     switches_rnn = copy.deepcopy(switches_rnn)
     
     
-    #num_to_keep = [8, 7, 6, 5, 4, 3, 1] # num_to_keep = [5, 3, 1]
-    #num_to_drop = [1, 1, 1, 1, 1, 1, 2] # num_to_drop = [3, 2, 2]
-    
     num_to_keep = [6, 3, 1] # num_to_keep = [5, 3, 1]
     num_to_drop = [3, 3, 2] 
-    
-    #num_to_keep_rnn = [4, 4, 3, 3, 2, 2, 1]
-    #num_to_drop_rnn = [1, 0, 1, 0, 1, 0, 1]
     
     num_to_keep_rnn = [3, 2, 1]
     num_to_drop_rnn = [2, 1, 1]
@@ -199,8 +186,7 @@ def main():
     # num of epochs without alpha weight updates    
     eps_no_archs = [15, 3, 3]
     
-    # epochs = [10, 9, 8, 7, 6, 5, 5]
-    
+
     train_losses = []
     valid_losses = []
     train_acc = []
@@ -211,7 +197,6 @@ def main():
     
     # iterate over stages
     for sp in range(len(num_to_keep)): 
-        # sp=0
     
         if sp == 0:
        
@@ -228,11 +213,6 @@ def main():
            
            alphas_rnn = nn.Parameter(torch.FloatTensor(1e-3*np.random.randn(k_rhn, num_ops_rhn)))
            
-           # print(alphas_normal)
-           # print(alphas_reduce)
-           # print(alphas_rnn)
-
-           
            multiplier, stem_multiplier = 4,3
 
            model = one_shot_model.RNNModelSearch(args.seq_size, args.dropouth, args.dropoutx,
@@ -247,7 +227,6 @@ def main():
             new_reduce_arch = nn.Parameter(new_reduce_arch)
             new_normal_arch = nn.Parameter(new_normal_arch)
             new_rnn_arch = nn.Parameter(new_arch_rnn)
-            # print(new_reduce_arch)
             
             model = one_shot_model.RNNModelSearch(args.seq_size, args.dropouth, args.dropoutx,
                           args.init_channels, num_classes, args.layers, args.steps, multiplier, stem_multiplier,  
@@ -256,13 +235,10 @@ def main():
                               
 
             new_dict = model.state_dict()
-            # trained_weights = {k: v for k, v in old_dict.items() if k in new_dict}
            
             trained_weights = {k: v for k, v in old_dict.items() if k in new_dict}
-            # müssen die old weights sein
+            # need to be the old weights
            
-            #trained_weights['stem.0.weight'] # 0.0064, (ist selbe wie in new_dict also falsch!!!)
-            # jetzt aber mit 0.18 richtig
             trained_weights["alphas_normal"] = new_normal_arch 
             trained_weights["alphas_reduce"] = new_reduce_arch
             trained_weights["weights"] = new_rnn_arch
@@ -280,13 +256,10 @@ def main():
         
         conv = []
         rhn = []
-        for name, param in model.named_parameters(): # 1280 elemente (weil nicht einzeln aufgelistet, sowas wie batchnormalisierung)
+        for name, param in model.named_parameters(): # 1280 elements (because not listed each on its own; this is like batchnorma)
            if 'rnns' in name:
-               #print(name)
                rhn.append(param)
-           #elif 'decoder' in name:
            else:
-               #print(name)
                conv.append(param)
         
         optimizer = torch.optim.SGD([{'params': conv}, {'params':rhn}], lr=args.cnn_lr, weight_decay=args.cnn_weight_decay)
@@ -298,12 +271,11 @@ def main():
         
     
         # optimizer for alpha updates
-        optimizer_a = torch.optim.Adam(model.arch_parameters(), # model.module.arch_parameters()
+        optimizer_a = torch.optim.Adam(model.arch_parameters(),
                     lr=args.arch_learning_rate, betas=(0.5, 0.999), weight_decay=args.arch_weight_decay)
         
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 optimizer, float(args.epochs[sp]), eta_min=args.learning_rate_min)
-        #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.epochs))
         
         sm_dim = -1
         epochs = args.epochs[sp]
@@ -311,15 +283,12 @@ def main():
         scale_factor = 0.2
         
         for epoch in range(epochs):
-            # epoch=0
             train_start = time.strftime("%Y%m%d-%H%M")
 
             
-            #scheduler.step()
             lr = scheduler.get_last_lr()[0]
             logging.info('Epoch: %d lr: %e', epoch, lr)
             epoch_start = time.time()
-            # training
             if epoch < eps_no_arch: 
                 model.p = float(drop_rate[sp]) * (epochs - epoch - 1) / epochs 
                 model.update_p()       
@@ -347,8 +316,6 @@ def main():
                 train_acc.append(f1)
 
      
-            #all_labels_train.append(labels)
-            #all_predictions_train.append(predictions)
             train_losses.append(train_loss)
             epoch_end = time.time()
             time_per_epoch.append(epoch_end)
@@ -398,13 +365,13 @@ def main():
             for sks in range(0, 9): 
                 # sks=8
                 max_sk = 8 - sks                
-                num_sk = check_sk_number(switches_normal_cnn) # counts number of identity/scip connections, 2
+                num_sk = check_sk_number(switches_normal_cnn) # counts number of identity/skip connections, 2
                
                 if not num_sk > max_sk: # 2 > 8 for i=0 continue, 2 > 1
                     continue
                 while num_sk > max_sk: # starts with 2>1
                     normal_prob = delete_min_sk_prob(switches_normal_cnn, switches_normal_2, normal_prob)
-                    switches_normal_cnn = keep_1_on(switches_normal_2, normal_prob) # von aktuell 4 übrig gebliebenen, werden jetzt nochmal 2 gekickt, haben also 2 übrig
+                    switches_normal_cnn = keep_1_on(switches_normal_2, normal_prob) # out of currently 4 remaining, 2 more are removed, 2 remain
                     switches_normal_cnn = keep_2_branches(switches_normal_cnn, normal_prob)
                     num_sk = check_sk_number(switches_normal_cnn)
                 logging.info('Number of skip-connect: %d', max_sk)

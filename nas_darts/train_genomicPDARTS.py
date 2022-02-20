@@ -133,12 +133,7 @@ def main():
       
     logging.info("args = %s", args)
            
-    #train_object, valid_object, num_classes = dp.data_preprocessing(train_directory = args.train_directory, valid_directory = args.valid_directory, num_files=args.num_files,
-    #        seq_size = args.seq_len, batch_size=args.batch_size, next_character=args.next_character_prediction)
-    
-    #_, valid_data, num_classes = dp.data_preprocessing(train_directory = args.train_directory, valid_directory = args.valid_directory, num_files=args.num_files,
-    #        seq_size = args.seq_len, batch_size=args.batch_size, next_character=args.next_character_prediction)
-    
+
     if args.task == "next_character_prediction":
         
         import generalNAS_tools.data_preprocessing_new as dp
@@ -155,7 +150,6 @@ def main():
         
         import generalNAS_tools.data_preprocessing_TF as dp
         
-#        train_queue, valid_queue, test_queue = dp.data_preprocessing(args.train_input_directory, args.valid_input_directory, args.test_input_directory, args.train_target_directory, args.valid_target_directory, args.test_target_directory, args.batch_size)
         train_queue, valid_queue, test_queue = dp.data_preprocessing(args.train_directory, args.valid_directory, args.test_directory, args.batch_size)
 
         criterion = nn.BCELoss().to(device)
@@ -218,15 +212,13 @@ def main():
     
     # iterate over stages
     for sp in range(len(num_to_keep)): 
-        # sp=0
         
         k_cnn = sum(1 for i in range(args.steps) for n in range(2+i))
           
         num_ops_cnn = sum(switches_normal_cnn[0])
         
-        alphas_normal = nn.Parameter(torch.FloatTensor(1e-3*np.random.randn(k_cnn, num_ops_cnn))) # vorher: k_cnn, num_ops_cnn
-        alphas_reduce = nn.Parameter(torch.FloatTensor(1e-3*np.random.randn(k_cnn, num_ops_cnn))) # vorher: k_cnn, num_ops_cnn
-        #alphas_normal, alphas_reduce = Variable(alphas_normal, requires_grad=True), Variable(alphas_reduce, requires_grad=True)
+        alphas_normal = nn.Parameter(torch.FloatTensor(1e-3*np.random.randn(k_cnn, num_ops_cnn))) # was: k_cnn, num_ops_cnn
+        alphas_reduce = nn.Parameter(torch.FloatTensor(1e-3*np.random.randn(k_cnn, num_ops_cnn))) # was: k_cnn, num_ops_cnn
         
         k_rhn = sum(i for i in range(1, rnn_steps+1))             
         num_ops_rhn = sum(switches_rnn[0])
@@ -248,14 +240,9 @@ def main():
         conv = []
         rhn = []
         for name, param in model.named_parameters():
-            #print(name)
-            #if 'stem' or 'preprocess' or 'conv' or 'bn' or 'fc' in name:
            if 'rnns' in name:
-               #print(name)
                rhn.append(param)
-           #elif 'decoder' in name:
            else:
-               #print(name)
                conv.append(param)
         
         optimizer = torch.optim.SGD([{'params':conv}, {'params':rhn}], lr=args.cnn_lr, weight_decay=args.cnn_weight_decay)
@@ -267,12 +254,12 @@ def main():
         
     
         # optimizer for alpha updates
-        optimizer_a = torch.optim.Adam(model.arch_parameters(), # model.module.arch_parameters()
+        optimizer_a = torch.optim.Adam(model.arch_parameters(),
                     lr=args.arch_learning_rate, betas=(0.5, 0.999), weight_decay=args.arch_weight_decay)
         
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 optimizer, float(args.epochs), eta_min=args.learning_rate_min)
-        #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.epochs))
+
             
         
         sm_dim = -1
@@ -300,8 +287,6 @@ def main():
                 model.update_p()  
 
                 labels, predictions, train_loss = train(train_queue, valid_queue, model, rhn, conv, criterion, optimizer, optimizer_a, None, args.unrolled, lr, epoch, args.num_steps, clip_params, args.report_freq, args.beta, args.one_clip, train_arch=True, pdarts=True, task=args.task)
-                # model.arch_parameters()
-                # alphas_rnn
                 
             labels = np.concatenate(labels)
             predictions = np.concatenate(predictions)
@@ -319,20 +304,16 @@ def main():
                 train_acc.append(f1)
 
      
-            #all_labels_train.append(labels)
-            #all_predictions_train.append(predictions)
             train_losses.append(train_loss)
             epoch_end = time.time()
             time_per_epoch.append(epoch_end)
 
             # validation
-            # validation
             if args.validation == True:
                 if epoch % args.report_validation == 0:
                     labels, predictions, valid_loss = infer(valid_queue, model, criterion, args.batch_size, args.num_steps, args.report_freq, task=args.task)
 
-                    # logging.info('Valid_acc %f', valid_acc)
-                    
+
                     labels = np.concatenate(labels)
                     predictions = np.concatenate(predictions)
                     
@@ -370,17 +351,15 @@ def main():
             logging.info('Restricting skipconnect...')
             # regularization of skip connections
             for sks in range(0, 9): 
-                # sks=7
                 max_sk = 8 - sks                
-                num_sk = check_sk_number(switches_normal_cnn) # counts number of identity/scip connections, 2
+                num_sk = check_sk_number(switches_normal_cnn) # counts number of identity/skip connections, 2
                
-                if not num_sk > max_sk: # 2 > 8 for i=0 continue, 2 > 1; bei sks=7 zum ersten mal nicht continue
-                    # print('continue')
+                if not num_sk > max_sk: # 2 > 8 for i=0 continue, 2 > 1; sks=7 first time no continue
                     continue
                 
                 while num_sk > max_sk: # starts with 2>1
                     normal_prob = delete_min_sk_prob(switches_normal_cnn, switches_normal_2, normal_prob)
-                    switches_normal_cnn = keep_1_on(switches_normal_2, normal_prob) # von aktuell 4 übrig gebliebenen, werden jetzt nochmal 2 gekickt, haben also 2 übrig
+                    switches_normal_cnn = keep_1_on(switches_normal_2, normal_prob) # out of currently 4 remaining, 2 more are removed, 2 remain
                     switches_normal_cnn = keep_2_branches(switches_normal_cnn, normal_prob)
                     num_sk = check_sk_number(switches_normal_cnn)
                     

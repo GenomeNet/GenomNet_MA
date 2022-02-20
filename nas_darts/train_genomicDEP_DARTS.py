@@ -148,7 +148,6 @@ def main():
         
         import generalNAS_tools.data_preprocessing_TF as dp
         
-        #train_queue, valid_queue, test_queue = dp.data_preprocessing(args.train_input_directory, args.valid_input_directory, args.test_input_directory, args.train_target_directory, args.valid_target_directory, args.test_target_directory, args.batch_size)
         train_queue, valid_queue, test_queue = dp.data_preprocessing(args.train_directory, args.valid_directory, args.test_directory, args.batch_size)
 
         criterion = nn.BCELoss().to(device)
@@ -171,21 +170,20 @@ def main():
     
     ## CNN ##
     # define discarded operations
-    num_to_keep = [6, 3, 1] # num_to_keep = [5, 3, 1]
+    num_to_keep = [6, 3, 1]
     num_to_drop = [3, 3, 2]
     # define discarded edges
     keep_cnn_edges = [14, 13, 11]
-    #discard_cnn_edges = [1, 2, 0]
+
     max_edges_cnn = [5, 4, 3]
-    # disc_cnn_idxs = np.nonzero(discard_cnn_edges)
     
-    # sp=0: 14,9 (trainiert) -> 14,8 (danach discarded)
+    # sp=0: 14,9 (trainiert) -> 14,8 (then discarded)
     # sp=1: 14,8 -> 14,7
     # sp=2: 14,7 -> 14,6
     # sp=3: 14,6 -> 14,5
     # sp=4: 14,5 -> 14,4 -> 13,4
-    # sp=5 (letzter sp wo discarded wird): 13,4 -> 13,3 -> 11,3
-    # sp=6 (wird nur noch in final architecture umgewandelt): 11,3 -> 11,1 
+    # sp=5 (last sp where things are discarded): 13,4 -> 13,3 -> 11,3
+    # sp=6 (will be converted to final architecture): 11,3 -> 11,1 
     
     ## RHN ##
     num_to_keep_rnn = [3, 2, 1]
@@ -193,17 +191,15 @@ def main():
     # disc_rhn_ops = np.nonzero(num_to_drop_rnn)
     
     keep_rhn_edges = [36, 30, 21]
-    #discard_rhn_edges = [6, 2, 3, 4, 5, 0]
     max_edges_rhn = [8, 5, 3]
 
-    # disc_rhn_idxs = np.nonzero(discard_rhn_edges)
-    # sp=0: 36,5 (trainiert) -> 35,4 (danach discarded)
+    # sp=0: 36,5 (trainiert) -> 35,4 (discarded afterwards)
     # sp=1: 14,8 -> 14,7
     # sp=2: 14,7 -> 14,6
     # sp=3: 14,6 -> 14,5
     # sp=4: 14,5 -> 14,4 -> 13,4
-    # sp=5 (letzter sp wo discarded wird): 13,4 -> 13,3 -> 11,3
-    # sp=6 (wird nur noch in final architecture umgewandelt): 11,3 -> 11,1 
+    # sp=5 (last sp where things are discarded): 13,4 -> 13,3 -> 11,3
+    # sp=6 (will be converted to final architecture): 11,3 -> 11,1 
     
     # how many channels are added
     if len(args.add_width) == 3:
@@ -239,15 +235,13 @@ def main():
     
     # iterate over stages
     for sp in range(len(num_to_keep)): 
-        # sp=2
            
         k_cnn = keep_cnn_edges[sp]
       
         num_ops_cnn = sum(switches_normal_cnn[0])
         
-        alphas_normal = nn.Parameter(torch.FloatTensor(1e-3*np.random.randn(k_cnn, num_ops_cnn))) # vorher: k_cnn, num_ops_cnn
-        alphas_reduce = nn.Parameter(torch.FloatTensor(1e-3*np.random.randn(k_cnn, num_ops_cnn))) # vorher: k_cnn, num_ops_cnn
-        #alphas_normal, alphas_reduce = Variable(alphas_normal, requires_grad=True), Variable(alphas_reduce, requires_grad=True)
+        alphas_normal = nn.Parameter(torch.FloatTensor(1e-3*np.random.randn(k_cnn, num_ops_cnn))) # was: k_cnn, num_ops_cnn
+        alphas_reduce = nn.Parameter(torch.FloatTensor(1e-3*np.random.randn(k_cnn, num_ops_cnn))) # was: k_cnn, num_ops_cnn
         
         k_rhn = keep_rhn_edges[sp]         
         num_ops_rhn = sum(switches_rnn[0])
@@ -270,14 +264,9 @@ def main():
         conv = []
         rhn = []
         for name, param in model.named_parameters():
-            #print(name)
-            #if 'stem' or 'preprocess' or 'conv' or 'bn' or 'fc' in name:
            if 'rnns' in name:
-               #print(name)
                rhn.append(param)
-           #elif 'decoder' in name:
            else:
-               #print(name)
                conv.append(param)
         
         optimizer = torch.optim.SGD([{'params':conv}, {'params':rhn}], lr=args.cnn_lr, weight_decay=args.cnn_weight_decay)
@@ -287,16 +276,12 @@ def main():
         optimizer.param_groups[1]['lr'] = args.rhn_lr
         optimizer.param_groups[1]['weight_decay'] = args.rhn_weight_decay
         
-        # old_dict = model.state_dict()
-        # old_dict['weights']
-        # old_dict['rnns.0.weights']
         # optimizer for alpha updates
-        optimizer_a = torch.optim.Adam(model.arch_parameters(), # model.module.arch_parameters()
+        optimizer_a = torch.optim.Adam(model.arch_parameters(),
                     lr=args.arch_learning_rate, betas=(0.5, 0.999), weight_decay=args.arch_weight_decay)
         
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 optimizer, float(args.epochs[sp]), eta_min=args.learning_rate_min)
-        #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.epochs))
         
         sm_dim = -1
         epochs = args.epochs[sp]
@@ -307,7 +292,6 @@ def main():
        
         for epoch in range(epochs):
             
-            # epoch=0
             train_start = time.strftime("%Y%m%d-%H%M")
 
             lr = scheduler.get_last_lr()[0]
@@ -341,8 +325,6 @@ def main():
                 train_acc.append(f1)
 
      
-            #all_labels_train.append(labels)
-            #all_predictions_train.append(predictions)
             train_losses.append(train_loss)
             epoch_end = time.time()
             time_per_epoch.append(epoch_end)
@@ -379,7 +361,6 @@ def main():
             switches_rnn2 = copy.deepcopy(switches_rnn)
             
         # discard CNN operations
-        # model.alphas_reduce
         _, _, switches_normal_cnn, switches_reduce_cnn = discard_cnn_ops(model, switches_normal_cnn, switches_reduce_cnn, num_to_keep, num_to_drop, sp, new_alpha_values=False)
         
         # discard RHN operations
@@ -396,7 +377,7 @@ def main():
 
         if sp == len(num_to_keep) - 1: 
            
-            # er bildet jetzt auch switches2 erstmal nur switches_normal um dann damit genotype zu bestimmen
+            # use switches2 to switches_normal to determine genotype
             genotype, switches_normal_cnn, switches_reduce_cnn, switches_rnn, normal_prob, reduce_prob, rnn_prob = final_stage_genotype(model, switches_normal_cnn, switches_normal_2, switches_reduce_cnn, switches_reduce_2, switches_rnn, switches_rnn2)
 
           
@@ -404,15 +385,14 @@ def main():
             logging.info('Restricting skipconnect...')
             # regularization of skip connections
             for sks in range(0, 9): 
-                # sks=0
                 max_sk = 8 - sks                
-                num_sk = check_sk_number(switches_normal_cnn) # counts number of identity/scip connections, 2
+                num_sk = check_sk_number(switches_normal_cnn) # counts number of identity/skip connections, 2
                
                 if not num_sk > max_sk: # 2 > 8 for i=0 continue, 2 > 1
                     continue
                 while num_sk > max_sk: # starts with 2>1
                     normal_prob = delete_min_sk_prob(switches_normal_cnn, switches_normal_2, normal_prob)
-                    switches_normal_cnn = keep_1_on(switches_normal_2, normal_prob) # von aktuell 4 übrig gebliebenen, werden jetzt nochmal 2 gekickt, haben also 2 übrig
+                    switches_normal_cnn = keep_1_on(switches_normal_2, normal_prob) # out of currently 4 remaining, 2 more are removed, 2 remain
                     switches_normal_cnn = keep_2_branches(switches_normal_cnn, normal_prob)
                     num_sk = check_sk_number(switches_normal_cnn)
                 logging.info('Number of skip-connect: %d', max_sk)
