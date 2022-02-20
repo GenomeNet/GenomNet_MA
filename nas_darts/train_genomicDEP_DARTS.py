@@ -17,7 +17,7 @@ import torch.nn as nn
 import torch.utils
 import copy
 
-import model_search_de as one_shot_model
+import nas_darts.model_search_de as one_shot_model
 
 from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn
 
