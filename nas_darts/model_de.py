@@ -24,10 +24,10 @@ from generalNAS_tools.utils import mask2d
 from operator import itemgetter 
 
 
-from darts_tools.comp_aux import get_state_ind, get_w_pos
+from nas_utils.comp_aux import get_state_ind, get_w_pos
 
 
-import darts_tools.cnn_eval as cnn_eval
+import nas_utils.cnn_eval as cnn_eval
 
 INITRANGE = 0.04
 

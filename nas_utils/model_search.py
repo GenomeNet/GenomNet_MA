@@ -14,7 +14,7 @@ from nas_utils.model_discCNN import DARTSCell, RNNModel
 
 
 from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, rnn_steps, CONCAT, Genotype
-from darts_tools.comp_aux import compute_positions, activ_fun
+from nas_utils.comp_aux import compute_positions, activ_fun
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
