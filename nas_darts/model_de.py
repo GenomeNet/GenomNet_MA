@@ -6,7 +6,7 @@ Created on Fri Oct  8 21:51:01 2021
 @author: amadeu
 """
 
-### This file is mostly identical to model_discCNN with minor changes specifically for DEP_DARTS
+### This file is mostly identical to model_search with minor changes specifically for DEP_DARTS
 
 import torch
 import torch.nn as nn

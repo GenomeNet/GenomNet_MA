@@ -14,9 +14,9 @@ import torch
 import logging
 import torch.nn as nn
 
-import nas_sampling.model as one_shot_model
+import nas_utils.model_discCNN as one_shot_model
 
-from nas_sampling.random_Sampler import generate_random_architectures
+from nas_darts.random_Sampler import generate_random_architectures
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

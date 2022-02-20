@@ -10,7 +10,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from darts_tools.model_discCNN import DARTSCell, RNNModel
+from nas_utils.model_discCNN import DARTSCell, RNNModel
 
 
 from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, rnn_steps, CONCAT, Genotype

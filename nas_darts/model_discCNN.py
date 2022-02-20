@@ -333,7 +333,7 @@ class RNNModel(nn.Module):
         else:
             # run search
             assert genotype is None
-            import model_search
+            from nas_utils import model_search
             cell_cls = model_search.DARTSCellSearch
             self.rnns = [cell_cls(ninp, nhid, dropouth, dropoutx, self.switches_rnn)]
 

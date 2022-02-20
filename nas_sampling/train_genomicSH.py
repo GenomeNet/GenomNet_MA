@@ -14,7 +14,7 @@ import torch
 import logging
 import torch.nn as nn
 
-import nas_sampling.model as one_shot_model
+import nas_utils.model_discCNN as one_shot_model
 
 from nas_sampling.random_Sampler import generate_random_architectures
 
