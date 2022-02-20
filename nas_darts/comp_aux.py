@@ -7,23 +7,14 @@ Created on Tue Jul  6 11:38:29 2021
 """
 
 
-# The aim of this script, is to make the RHN part faster than the original DARTS implementation
+# The aim of this script is to make the RHN part faster than the original DARTS implementation
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-#from genotypes_rnn import PRIMITIVES, STEPS, CONCAT, total_genotype
-from torch.autograd import Variable
-from collections import namedtuple
-# from model import DARTSCell, RNNModel
-# from darts_tools.model import DARTSCell, RNNModel
 
 import numpy as np
 
 from generalNAS_tools.operations_14_9 import *
-#from genotypes_cnn import PRIMITIVES_cnn
-#from genotypes_cnn import Genotype_cnn
-from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, rnn_steps, CONCAT, Genotype
+from generalNAS_tools.genotypes import PRIMITIVES_rnn
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

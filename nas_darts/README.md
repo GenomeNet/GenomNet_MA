@@ -9,10 +9,7 @@
 
 ## Loaded Modules
 
-### Most methods
-
-* `model_search.py`: `RNNModelSearch`-class (not used by DEP-DARTS)
-* `model_discCNN.py`: auxiliary used by `model_search`
+* `genotype_parser.py`: `parse_genotype()`-function, used by `comp.aux.py`
 
 ### DARTS
 

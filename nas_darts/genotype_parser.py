@@ -12,7 +12,6 @@ from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, rnn_steps
 import copy
 import torch
 import torch.nn.functional as F
-import numpy as np
 
 
 
@@ -21,30 +20,18 @@ _steps = _multiplier = 4
 concat = range(2+_steps-_multiplier, _steps+2)
 
 
-#row = F.softmax(arch_rnn[25])
-#row2 = F.softmax(new_arch_rnn[22])
-
-#row1 = F.softmax(arch_rnn[21])
-#row12 = F.softmax(new_arch_rnn[20])
-
 def parse_genotype(switches_normal_cnn, arch_normal, switches_reduce_cnn, arch_reduce, switches_rnn, arch_rnn):
     
         alphas_rnn = F.softmax(arch_rnn, dim=-1)#.data.cpu().numpy()
-        # alphas_rnn = F.softmax(alphas_rnn, dim=-1).data.cpu().numpy()
-
-        # alphas_rnn = alphas_rnn.data.cpu().numpy()
-        # alphas_rnn = np.copy(arch_rnn.data.cpu().numpy())
             
         switches_rnn = copy.deepcopy(switches_rnn)
         rnn_final = [0 for idx in range(36)]
         switch_count_rnn = 0
         for i in range(len(switches_rnn)): 
-             # i=30
-             if switches_rnn[i].count(False) != len(switches_rnn[i]): #wenn nicht alle false sind -> keine discarded edge
+             if switches_rnn[i].count(False) != len(switches_rnn[i]): # if not all are false -> don't discarded edge
                  if switches_rnn[i][0] == True:
-                     # d.h. wir bekommen die 14 max values raus von jeder edge: jetzt würde ich einfach 
-                     # erstmal von dem letzten Node (welche 5 edges hat) die schlechteste discarden, indem wir die gesamte switches 
-                     # Zeile False setzten
+                     #  this means we get the 14 max values of every edge: now I would just discard the worst from the last node (which has 5 edges)
+                     # by setting the entire switches row to False
                      alphas_rnn[i-switch_count_rnn][0] = 0
                  rnn_final[i] = max(alphas_rnn[i-switch_count_rnn]) # add best/max operation to final_prob 
              else: # if previous discarded edge
@@ -119,41 +106,33 @@ def parse_genotype(switches_normal_cnn, arch_normal, switches_reduce_cnn, arch_r
          
         gene_rhn = _parse_rnn(switches_rnn, alphas_rnn, rnn_final)
 
-        alphas_normal = F.softmax(arch_normal, dim=-1)#.data.cpu().numpy()
-        # alphas_normal = alphas_normal.data.cpu().numpy()
-        # alphas_normal = np.copy(arch_normal.data.cpu().numpy())
+        alphas_normal = F.softmax(arch_normal, dim=-1)
 
         switches_normal_cnn = copy.deepcopy(switches_normal_cnn)
         normal_final = [0 for idx in range(14)]
         switch_count_cnn = 0
         for i in range(len(switches_normal_cnn)): 
-             # i=4
-             if switches_normal_cnn[i].count(False) != len(switches_normal_cnn[i]): #wenn nicht alle false sind -> keine discarded edge
+             if switches_normal_cnn[i].count(False) != len(switches_normal_cnn[i]):  # if not all are false -> don't discarded edge
                  if switches_normal_cnn[i][0] == True:
                      alphas_normal[i-switch_count_cnn][0] = 0
-                 # d.h. wir bekommen die 14 max values raus von jeder edge: jetzt würde ich einfach 
-                 # erstmal von dem letzten Node (welche 5 edges hat) die schlechteste discarden, indem wir die gesamte switches 
-                 # Zeile False setzten
+                     #  this means we get the 14 max values of every edge: now I would just discard the worst from the last node (which has 5 edges)
+                     # by setting the entire switches row to False
                  normal_final[i] = max(alphas_normal[i-switch_count_cnn]) # add best/max operation to final_prob 
              else: # if previous discarded edge
                  normal_final[i] = 0 # set previous discarded edge to 1 (so that it does not get discarded in this stage)
                  switch_count_cnn += 1
           
-        alphas_reduce = F.softmax(arch_reduce, dim=-1)#.data.cpu().numpy()
-        # alphas_reduce = np.copy(arch_reduce.data.cpu().numpy())
-        # alphas_reduce = alphas_reduce.data.cpu().numpy()
+        alphas_reduce = F.softmax(arch_reduce, dim=-1)
 
         switches_reduce_cnn = copy.deepcopy(switches_reduce_cnn)
         reduce_final = [0 for idx in range(14)]
         switch_count_cnn = 0
         for i in range(len(switches_reduce_cnn)): 
-             # i=30
-             if switches_reduce_cnn[i].count(False) != len(switches_reduce_cnn[i]): #wenn nicht alle false sind -> keine discarded edge
+             if switches_reduce_cnn[i].count(False) != len(switches_reduce_cnn[i]):  # if not all are false -> don't discarded edge
                  if switches_reduce_cnn[i][0] == True:
                      alphas_reduce[i-switch_count_cnn][0] = 0
-                 # d.h. wir bekommen die 14 max values raus von jeder edge: jetzt würde ich einfach 
-                 # erstmal von dem letzten Node (welche 5 edges hat) die schlechteste discarden, indem wir die gesamte switches 
-                 # Zeile False setzten
+                     #  this means we get the 14 max values of every edge: now I would just discard the worst from the last node (which has 5 edges)
+                     # by setting the entire switches row to False
                  reduce_final[i] = max(alphas_reduce[i-switch_count_cnn]) # add best/max operation to final_prob 
              else: # if previous discarded edge
                  reduce_final[i] = 0 # set previous discarded edge to 1 (so that it does not get discarded in this stage)
@@ -166,9 +145,7 @@ def parse_genotype(switches_normal_cnn, arch_normal, switches_reduce_cnn, arch_r
              gene_cnn = []
              disc_edge_cnt = 0
              n = 2
-             # for i in range(len(switches_rnn)):
              for i in range(4):
-                 # i=0
                  end = start + n
                  tbcnn = cnn_final[start:end]
                  if i>0:
