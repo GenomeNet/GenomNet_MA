@@ -19,6 +19,7 @@
 (P-DARTS and derivatives)
 * `auxiliary_functions.py`: small helperfunctions
 * `discard_operations.py`: `discard_cnn_ops()`, `discard_rhn_ops()` functions
+* `final_stage_run.py`: `final_stage_genotype()` function
 
 ### DEP-DARTS
 

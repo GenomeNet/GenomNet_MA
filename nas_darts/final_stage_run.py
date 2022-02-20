@@ -7,31 +7,21 @@ Created on Sat Jun 19 12:18:12 2021
 """
 
 
-from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, rnn_steps, CONCAT, Genotype
+from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn
 import torch.nn.functional as F
 
 from darts_tools.auxiliary_functions import parse_network
 
-import numpy
-
-
-
 
 def final_stage_genotype(model, switches_normal_cnn, switches_normal_2, switches_reduce_cnn, switches_reduce_2, switches_rnn, switches_rnn2):
     
-    arch_param = model.arch_parameters() # model.module.arch_parameters()
+    arch_param = model.arch_parameters()
             
     sm_dim=-1
     
     normal_prob = F.softmax(arch_param[0], dim=sm_dim).data.cpu().numpy()
     reduce_prob = F.softmax(arch_param[1], dim=sm_dim).data.cpu().numpy()
     rnn_prob = F.softmax(arch_param[2], dim=sm_dim).data.cpu().numpy()
-    
-    # s_nr = switches_normal_cnn
-    # s_rr = switches_reduce_cnn
-    # s_rnnr = switches_rnn
-    # switches_reduce_2
-    # switches_rnn, switches_normal_cnn, switches_reduce_cnn = s_rnnr, s_nr, s_rr
     
     normal_final = [0 for idx in range(14)] 
     reduce_final = [0 for idx in range(14)]
