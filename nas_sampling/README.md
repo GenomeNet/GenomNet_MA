@@ -5,11 +5,7 @@
 * `train_genomicRS.py` (Random Search)
 * `train_genomicSH.py` (Successive Halving)
 
-
-### Both
-
-* `model.py`: `RNNModel`-class, used indirectly by OSP-NAS
-* `utils.py`: `mask2geno()`-function, `mask2switch()`-function (OSP-NAS only)
+## Loaded Modules
 
 ### OSP-NAS
 * `create_masks.py`
@@ -20,3 +16,7 @@
 ### RS / SH
 * `random_Sampler.py`: `generate_random_architectures()`-function
 * `hb_iteration.py`: `hb_step()`-function (SH only)
+
+### Both
+* `model.py`: `RNNModel`-class, used indirectly by OSP-NAS
+* `utils.py`: `mask2geno()`-function, `mask2switch()`-function (OSP-NAS only)
