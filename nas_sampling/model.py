@@ -219,7 +219,8 @@ class RNNModel(nn.Module):
                 
         super(RNNModel, self).__init__()
     
-            
+        assert search  # search == FALSE is not implemented here!
+        
         self.mask_normal = mask[0]
         self.mask_reduce = mask[1]
 
@@ -268,17 +269,11 @@ class RNNModel(nn.Module):
                     reduction_high=False
                     num_neurons = round(num_neurons/2)
                     
-                if search == True:
-                    cell = CNN_Cell_search(steps, multiplier, C_prev_prev, C_prev, C_curr, reduction, reduction_prev, self.mask_reduce, reduction_high)
-                else:
-                    cell = cnn_eval.CNN_Cell_eval(genotype, C_prev_prev, C_prev, C_curr, reduction, reduction_prev, reduction_high)
+                cell = CNN_Cell_search(steps, multiplier, C_prev_prev, C_prev, C_curr, reduction, reduction_prev, self.mask_reduce, reduction_high)
 
             else:
                 reduction = reduction_high = False
-                if search == True:
-                    cell = CNN_Cell_search(steps, multiplier, C_prev_prev, C_prev, C_curr, reduction, reduction_prev, self.mask_normal, reduction_high) 
-                else:
-                    cell = cnn_eval.CNN_Cell_eval(genotype, C_prev_prev, C_prev, C_curr, reduction, reduction_prev, reduction_high) 
+                cell = CNN_Cell_search(steps, multiplier, C_prev_prev, C_prev, C_curr, reduction, reduction_prev, self.mask_normal, reduction_high) 
               
             reduction_prev = reduction
             self.cells += [cell]
@@ -294,18 +289,11 @@ class RNNModel(nn.Module):
             
         assert ninp == nhid == nhidlast
         # again, we have different rnn cells for search and for evaluation
-        if search == False: 
-            # rnn cell for evaluation of final architecture
-            assert genotype is not None
-            cell_cls = DARTSCell
-            self.rnns = [cell_cls(ninp, nhid, dropouth, dropoutx, genotype)] # 
-
-        else:
-            # run search
-            assert genotype is None
-            from nas_sampling import model_search
-            cell_cls = model_search.DARTSCellSearch
-            self.rnns = [cell_cls(ninp, nhid, dropouth, dropoutx)]
+        # run search
+        assert genotype is None
+        from nas_sampling import model_search
+        cell_cls = model_search.DARTSCellSearch
+        self.rnns = [cell_cls(ninp, nhid, dropouth, dropoutx)]
         
         
         self.rnns = torch.nn.ModuleList(self.rnns)
