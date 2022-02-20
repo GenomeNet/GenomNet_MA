@@ -6,7 +6,9 @@ import time
 from generalNAS_tools.genotypes import OPS_cnn, OPS_rnn
 
 
-
+"""
+This file is used for generating archs in the search space
+"""
 
 
 
