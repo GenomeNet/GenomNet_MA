@@ -16,9 +16,10 @@ import torchvision.datasets as dset
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
 import random
+
 from BONAS_search_space.super_model import geno2mask, merge
-# from BONAS_search_space.model_search import RNNModelSearch
-import BONAS_search_space.model_search as one_shot_model
+
+import nas_bonas.model_search as one_shot_model
 
 
 from opendomain_utils.ioutils import copy_log_dir

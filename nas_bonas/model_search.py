@@ -10,9 +10,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# from genotypes_rnn import PRIMITIVES, STEPS, CONCAT, total_genotype
 from generalNAS_tools.operations_14_9 import *
-from generalNAS_tools.genotypes import PRIMITIVES_cnn, rnn_steps, PRIMITIVES_rnn, CONCAT
+from generalNAS_tools.genotypes import rnn_steps, PRIMITIVES_rnn, CONCAT
 from generalNAS_tools import genotypes
 
 from torch.autograd import Variable
@@ -25,12 +24,6 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 from darts_tools.comp_aux import compute_positions, activ_fun
 
-
-#import cnn_eval
-
-# for search
-
-# ninp, nhid, dropouth, dropoutx, mask
 class DARTSCellSearch(DARTSCell):
 
   def __init__(self, ninp, nhid, dropouth, dropoutx):
@@ -38,29 +31,12 @@ class DARTSCellSearch(DARTSCell):
     
     self.bn = nn.BatchNorm1d(nhid, affine=False)
     
-    # self.mask_rnn = mask_rnn
-    #self.switch_rnn = switch_rnn
-    
-    # probs = model.arch_parameters()[2]
-    # hidden, x = torch.rand(2,256), torch.rand(2,256)
-    
-    #self.rows, self.nodes, self.cols = compute_positions(self.switch_rnn, rnn_steps, PRIMITIVES_rnn)
-    # switch_rnn = switches_rnn
-    # rows, nodes, cols = compute_positions(switch_rnn, rnn_steps, PRIMITIVES_rnn)
-
-    #self.acn, self.acf = activ_fun(rnn_steps, PRIMITIVES_rnn, self.switch_rnn)  
-
-    # hidden = cell(inputs[t], hidden, x_mask, h_mask) # hidden, x_mask und h_mask hat jetzt auch shape [2,256]
-    # t=0
-      # x = inputs[t] # shape [2,256] 
-      # rnn_mask = mask[1]
   def cell(self, x, h_prev, x_mask, h_mask, rnn_mask):
       
     s0 = self._compute_init_state(x, h_prev, x_mask, h_mask)
-    #print(s0.shape)
+
     s0 = self.bn(s0)
-    #probs = F.softmax(self.weights, dim=-1) 
-   
+
     offset = 0
     states = s0.unsqueeze(0) 
     
@@ -78,8 +54,6 @@ class DARTSCellSearch(DARTSCell):
         c = c.sigmoid()
         
         s = torch.zeros_like(s0) # [2,256]
-        #s = s.unsqueeze(0)
-        #unweighteds = [states + c * (torch.tanh(h) - states), states + c * (torch.sigmoid(h) - states), states + c * (torch.relu(h) - states), states + c * (h - states)]
         for k, name in enumerate(PRIMITIVES_rnn):
             
             if (rnn_mask[offset:offset+i+1, k]==0).all():
@@ -89,7 +63,7 @@ class DARTSCellSearch(DARTSCell):
             
             idxs = np.nonzero(rnn_mask[offset:offset+i+1, k])[0]
          
-            unweighted = states + c * (fn(h) - states) # states [3,2,256], wobei s immer [2,256]
+            unweighted = states + c * (fn(h) - states) # states [3,2,256], where s always [2,256]
             s += torch.sum(unweighted[idxs, :, :], dim=0)
            
         s = self.bn(s) 
