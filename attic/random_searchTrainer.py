@@ -31,6 +31,9 @@ import random
 from super_model import geno2mask, merge
 from model_search import RNNModelSearch
 import data_preprocessing as dp
+
+from generalNAS_tools.utils import count_parameters_in_MB
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -231,7 +234,7 @@ class Trainer:
         # supernet = Network(init_channels, CIFAR_CLASSES, layers, mask=supernet_mask)
 
         logging.info("Training Super Model ...")
-        logging.info("param size = %fMB", utils.count_parameters_in_MB(supernet))
+        logging.info("param size = %fMB", count_parameters_in_MB(supernet))
         optimizer = torch.optim.SGD(
             super_model.parameters(), # er nimmt also nur die parameters vom "kleinen supernet" welches nur 100 subarchitectures beinhaltet
             self.learning_rate,

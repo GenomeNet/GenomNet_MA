@@ -8,7 +8,7 @@ Created on Mon Sep 13 16:28:13 2021
 
 from generalNAS_tools.operations_14_9 import OPS, ReLUConvBN, FactorizedReduce
 from generalNAS_tools.genotypes import PRIMITIVES_cnn, rnn_steps
-from opendomain_utils.training_utils import mask2d
+from generalNAS_tools.training_utils import mask2d
 
 import numpy as np
 from torch.autograd import Variable

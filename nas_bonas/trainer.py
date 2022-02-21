@@ -35,7 +35,7 @@ import copy
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 import gc
 
-from generalNAS_tools.utils import scores_perClass, scores_Overall, pr_aucPerClass, roc_aucPerClass, overall_acc, overall_f1
+from generalNAS_tools.utils import scores_perClass, scores_Overall, pr_aucPerClass, roc_aucPerClass, overall_acc, overall_f1, count_parameters_in_MB, AvgrageMeter
 from generalNAS_tools.train_and_validate import train, infer
 
 
@@ -270,7 +270,7 @@ class Trainer:
         # supernet = build_model(supernet_mask) # baut das model, gemäß der mask
 
         logging.info("Training Super Model ...")
-        logging.info("param size = %fMB", utils.count_parameters_in_MB(supernet))
+        logging.info("param size = %fMB", count_parameters_in_MB(supernet))
         
         conv = []
         rhn = []
@@ -456,9 +456,7 @@ class Trainer:
     
     
     def evaluate(self, model, mask):
-        objs = utils.AvgrageMeter()
-        #top1 = utils.AvgrageMeter()
-        #top2 = utils.AvgrageMeter()
+        objs = AvgrageMeter()
              
         total_loss = 0
         labels = []
@@ -488,8 +486,6 @@ class Trainer:
                 #print(logits)
                 loss = self.criterion(logits, target)
     
-                # prec1, prec5 = utils.accuracy(logits, target, topk=(1, 2))
-                
                 objs.update(loss.data, batch_size)
                 labels.append(target.detach().cpu().numpy())
                 if self.task == "next_character_prediction":
@@ -511,11 +507,7 @@ class Trainer:
     # The super-network is trained by uniformly/randomly sampling from the
     # architectures of supernets. In each iteration, one sub-network (Ai, Xi) is randomly sampled from the super-network,
     def train(self, model, optimizer, supernet=False):
-        #objs = utils.AvgrageMeter()
-        #top1 = utils.AvgrageMeter()
-        #top2 = utils.AvgrageMeter()
-        # model = supernet
-        objs = utils.AvgrageMeter()
+        objs = AvgrageMeter()
         total_loss = 0
         #start_time = time.time()
         scores = nn.Softmax()

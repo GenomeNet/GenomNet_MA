@@ -15,7 +15,7 @@ from generalNAS_tools.utils import repackage_hidden, create_exp_dir, save_checkp
 
 from generalNAS_tools import utils
 
-from generalNAS_tools.utils import scores_perClass, scores_Overall, pr_aucPerClass, roc_aucPerClass, overall_acc, overall_f1
+from generalNAS_tools.utils import overall_acc, overall_f1
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

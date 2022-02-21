@@ -169,57 +169,6 @@ def roc_aucPerClass(labels, predictions, task):
 
 
 
-
-
-
-    
-#def pr_curveOverall():
-#    precisions = dict()
-#    recalls = dict()
-#    f1_scores = dict()
-#    for i in range(args.num_classes):
-#        # i=0
-#        precision[i], recall[i], _ = precision_recall_curve(labels[:,i], predictions[:,i])
-        
-        
-#    precisions["micro"], recalls["micro"], _ = precision_recall_curve(labels.ravel(), predictions.ravel())
-        
-#    plt.figure()
-#    plt.step(recalls['micro'], precisions['micro'], where='post')
-    
-#    plt.xlabel('Recall')
-#    plt.ylabel('Precision')
-#    plt.ylim([0.0, 1.05])
-#    plt.xlim([0.0, 1.0])
-#    plt.title(
-#        'Average precision score, micro-averaged over all classes: AP={0:0.2f}'
-#        )
-
-#    pr_auc_score = auc(recalls['micro'], precisions['micro'])
-
-
-
-#def roc_curveOverall():
-#    fpr, tpr, _ = roc_curve(testy, pos_probs)
-
-        
-        
-#    precisions["micro"], recalls["micro"], _ = precision_recall_curve(labels.ravel(), predictions.ravel())
-        
-#    plt.figure()
-#    plt.step(recalls['micro'], precisions['micro'], where='post')
-    
-#    plt.xlabel('Recall')
-#    plt.ylabel('Precision')
-#    plt.ylim([0.0, 1.05])
-#    plt.xlim([0.0, 1.0])
-#    plt.title(
-#        'Average precision score, micro-averaged over all classes: AP={0:0.2f}'
-#        )
-
-#    roc_auc_score = roc_auc_score(testy, pos_probs)
-
-
 class AvgrageMeter(object):
 
   def __init__(self):
@@ -252,30 +201,6 @@ def accuracy(output, target, topk=(1,)):
     correct_k = correct[:k].reshape(k*batch_size).float().sum(0)
     res.append(correct_k.mul_(100.0/batch_size))
   return res
-
-
-class Cutout(object):
-    def __init__(self, length):
-        self.length = length
-
-    def __call__(self, img):
-        h, w = img.size(1), img.size(2)
-        mask = np.ones((h, w), np.float32)
-        y = np.random.randint(h)
-        x = np.random.randint(w)
-
-        y1 = np.clip(y - self.length // 2, 0, h)
-        y2 = np.clip(y + self.length // 2, 0, h)
-        x1 = np.clip(x - self.length // 2, 0, w)
-        x2 = np.clip(x + self.length // 2, 0, w)
-
-        mask[y1: y2, x1: x2] = 0.
-        mask = torch.from_numpy(mask)
-        mask = mask.expand_as(img)
-        img *= mask
-        return img
-
-
 
 
 def count_parameters_in_MB(model):
@@ -358,6 +283,5 @@ def mask2d(B, D, keep_prob, cuda=True):
     
     m = Variable(m, requires_grad=False)
     if cuda:
-        #m = m.cuda()
         m = m.to(device)
     return m 

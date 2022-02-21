@@ -2,7 +2,7 @@
 
 from generalNAS_tools.operations_14_9 import *
 from generalNAS_tools.genotypes import PRIMITIVES_cnn, PRIMITIVES_rnn, rnn_steps, CONCAT
-from opendomain_utils.training_utils import mask2d
+from generalNAS_tools.utils import mask2d
 
 from opendomain_utils import genotypes
 import numpy as np
