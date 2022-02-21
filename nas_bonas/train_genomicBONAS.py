@@ -9,7 +9,7 @@ Created on Mon Jun 21 09:23:20 2021
 import os, sys, glob
 
 import logging
-# from BO_tools.configure_files import local_root_dir, local_data_dir, logfile, taskname, results_dir
+
 from BO_tools.runner import Runner
 import argparse
 from generalNAS_tools import utils
@@ -89,16 +89,6 @@ parser.add_argument('--save_dir', type=str,  default='test_search',
 args = parser.parse_args()
 
 
-#os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
-#logging.basicConfig(filename=os.path.join(local_root_dir, results_dir, taskname, str(args.gpu)+logfile), filemode='w', level=logging.INFO,
-#                    format='%(asctime)s : %(levelname)s  %(message)s', datefmt='%Y-%m-%d %A %H:%M:%S')
-#os.environ["PYTHONHASHSEED"] = "0"
-#console = logging.StreamHandler()
-#console.setLevel(logging.INFO)
-#formatter = logging.Formatter('%(asctime)s : %(levelname)s  %(message)s')
-#console.setFormatter(formatter)
-#logging.getLogger().addHandler(console)
-
 utils.create_exp_dir(args.save, scripts_to_save=glob.glob('*.py'))
 
 log_format = '%(asctime)s %(message)s'
@@ -110,9 +100,27 @@ fh.setFormatter(logging.Formatter(log_format))
 
 logging = logging.getLogger(__name__)
 
+def get_io_config(taskname="supermodel_random_1"):
+    
+    local_root_dir = "/home/ru85poq2/GenomNet_MA" # root working directory
+    local_data_dir = "/home/ru85poq2/data_BONAS" # data root
+    results_dir = "trained_results"
+    trained_pickle_file = "trained_models.pkl"
+    trained_csv_file = "trained_models.csv"
+    logfile = 'BOGCN_open_domain.log'
+        
+    io_config = dict(
+         trained_pickle_file=os.path.join(local_root_dir, results_dir, taskname, trained_pickle_file),
+         trained_csv_file=os.path.join(local_root_dir, results_dir, taskname, trained_csv_file),
+    )
+        
+    
+    return io_config, local_data_dir
 
-from BO_tools.configure_files import get_io_config
-io_config, local_root_dir, local_data_dir, results_dir, taskname, local_data_dir, logfile = get_io_config(args.save)
+io_config, local_data_dir = get_io_config(args.save)
+
+
+# local_data_dir:     local_data_dir = "/home/ru85poq2/data_BONAS" # data root
 
 
 
@@ -184,7 +192,9 @@ search_config = dict(
     if_init_samples=args.if_init_samples,
     init_num=args.init_num,#100,
     save = args.save,
-    save_dir = args.save_dir
+    save_dir = args.save_dir,
+    trained_pickle_file = io_config['trained_pickle_file'],
+    trained_csv_file = io_config['trained_csv_file']
 )
 
 
@@ -238,5 +248,5 @@ training_config = dict(
 
 
 if __name__ == "__main__":
-    runner = Runner(**search_config, training_cfg=training_config) # training_config und search_config wird beides von
+    runner = Runner(**search_config, training_cfg=training_config)
     runner.run()

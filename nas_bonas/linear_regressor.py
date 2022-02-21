@@ -28,26 +28,26 @@ class LinearRegressor():
         self.__intercept = intercept
         self.ifTransformSigmoid = ifTransformSigmoid
 
-    # train() wird nur gemacht, um "m", "beta" und "XX_inv" zu bestimmen, welche dann für predict verwendet wird
-    # letztendlich macht er nichts anderes als eben posterior_mean und posterior_variance etc. zu bestimmen mit Maximum-Likelihood
+    # train() is only done to determine "m", "beta" and "XX_inv", which are then used for predict
+    # in the end this does nothing more than determine posterior_mean and posterior_variance etc. with Maximum-Likelihood
     # 
     def train(self):
         dataset = self.__dataset
-        train_X = dataset[0] # einfach nur X, weil zweites element ist y; müsste shape [4,128]
-        # print(train_X.shape) # [4,128] output of gcn embedding layer
+        train_X = dataset[0] # just X, because second element is y; shape [4,128]
+        # (output of gcn embedding layer)
         train_X = train_X.cpu().data.numpy()
         train_Y = dataset[1]
         if self.ifTransformSigmoid:
             train_Y = np.log(train_Y / (1 - train_Y))
         # xx_inv stands for K inverse, paper used sum instead of lstsq, paper has beta and alpha as hyper parameter
         # beta stands for m, paper has beta as hyper parameter, 64*1
-        # wird oben als fit importiert
+        # imported above as fit
         m, XX_inv, beta = get_alpha_beta(train_X, train_Y) # m_N, S_N, beta
         self.__XX_inv = XX_inv
         self.__m = m
         self.beta = beta
 
-    # what is intercept???
+    # what is intercept?
     def predict(self, test_X, fc=None):
         
         test_X = test_X.cpu().data.numpy()
@@ -56,13 +56,13 @@ class LinearRegressor():
         s = []
         for row in range(test_X.shape[0]):
             x = test_X[row]
-            # print(x.shape) [4,128], output of gcn embedding layer
+            # x.shape: [4,128] (output of gcn embedding layer)
             s.append((1 / self.beta + np.dot(np.dot(x, XX_inv), x.T)) ** 0.5)
 
         s = np.reshape(np.asarray(s), (test_X.shape[0], 1))
         
         if fc:
-            test_X = torch.from_numpy(test_X).to(device) #.cuda()
+            test_X = torch.from_numpy(test_X).to(device)
             test_pred = fc(test_X)
             test_pred = test_pred.cpu().data.numpy()
         else:

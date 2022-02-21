@@ -3,20 +3,9 @@ import pickle
 import shutil
 from opendomain_utils.listdict import ListDict
 
-# from BO_tools.configure_files import io_config, local_root_dir, local_data_dir, results_dir, taskname, \
-#    local_data_dir, logfile
-
-from BO_tools.configure_files import get_io_config
-    
 from opendomain_utils.genotypes import Genotype
 
 
-
-
-# io_config, local_root_dir, local_data_dir, results_dir, taskname, local_data_dir, logfile = get_io_config(taskname="supermodel_random_1")
-
-# trained_pickle_file = io_config['trained_pickle_file']
-# trained_csv_file = io_config['trained_csv_file']
 
 def create_dirs(local_root_dir, results_dir, taskname):
     

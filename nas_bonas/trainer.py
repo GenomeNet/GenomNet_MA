@@ -23,9 +23,9 @@ import BONAS_search_space.model_search as one_shot_model
 
 from opendomain_utils.ioutils import copy_log_dir
 from opendomain_utils.genotypes import Genotype
-from BO_tools.configure_files import distributed
 
-DataParallel = torch.nn.parallel.DistributedDataParallel if distributed else torch.nn.DataParallel
+
+
 
 from itertools import cycle, islice
 
@@ -216,21 +216,9 @@ class Trainer:
                               self.init_channels, self.num_classes, self.layers, self.steps, multiplier, stem_multiplier,  
                               True, 0.2, None, self.task, 
                               mask).to(device)
-        #supernet = one_shot_model.RNNModelSearch(seq_len, dropouth, dropoutx,
-        #                     init_channels, 919, layers, 4, multiplier, stem_multiplier,  
-        #                     True, 0.2, None, task, 
-        #                     supernet_mask).to(device)
-        # if self.parallel:
-        #    if distributed:
-        #        model = DataParallel(model.cuda(), device_ids=[torch.cuda.current_device()])
-        #    else:
-        #        model = DataParallel(model.cuda())
-        #else:
-        #    model = model.cuda()
+
         return model
-    
-    # seq_len, dropout, dropouth, dropoutx, dropouti, dropoute, init_channels, num_classes, layers, steps, multiplier, stem_multiplier = 10, 0.75, 0.25, 0.75, 0.2, 0, 16, 4, 3, 4, 4, 3
-    
+
 
     # archs, eval_archs = genotypes, eval_genotypes
     def train_and_eval(self, archs, eval_archs=None):

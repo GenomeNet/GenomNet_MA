@@ -17,7 +17,6 @@ from data_generators.dynamic_generate import generate_archs
 
 from opendomain_utils.ioutils import get_geno_hash, get_trained_csv, get_trained_archs, update_trained_csv, \
     update_trained_pickle, create_dirs
-from BO_tools.configure_files import get_io_config
 
 from samplers import EASampler, RandomSampler
 import numpy as np
@@ -40,7 +39,9 @@ class Runner(object):
                  init_num=10,
                  eval_submodel_path = None,
                  save = None,
-                 save_dir=None
+                 save_dir=None,
+                 trained_pickle_file = None,
+                 trained_csv_file = None
                  ):
         
         assert training_cfg is not None
@@ -62,13 +63,8 @@ class Runner(object):
         self.save = save
         self.save_dir = save_dir
 
-        io_config, local_root_dir, local_data_dir, results_dir, taskname, local_data_dir, logfile = get_io_config(self.save)
-        # io_config, local_root_dir, local_data_dir, results_dir, taskname, local_data_dir, logfile = get_io_config(save)
-
-        # create_dirs(local_root_dir, results_dir, self.save)
-
-        self.trained_pickle_file = io_config['trained_pickle_file']
-        self.trained_csv_file = io_config['trained_csv_file']
+        self.trained_pickle_file = trained_pickle_file
+        self.trained_csv_file = trained_csv_file
         
         self.trainer = Trainer(**training_cfg)
         

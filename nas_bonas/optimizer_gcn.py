@@ -10,31 +10,17 @@ import time
 import numpy as np
 from . import neural_net_gcn as nn
 from . import linear_regressor as lm
-# import BO_tools.neural_net_gcn as nn
-# import BO_tools.linear_regressor as lm
 
 import scipy.stats as stats
 from predictors.utils.gcn_utils import padzero, add_global_node
 from opendomain_utils.loss_function import weighted_exp, weighted_linear, weighted_log
 from opendomain_utils.transform_genotype import transform_Genotype
 import torch
-import torch.nn.functional as F
 import logging
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-
-# num_epoch = 3
-
-# dataset = trained_arch_list
-# num_epoch=3
-# lr=0.001
-# lossnum=loss_num
-# ifPretrain=False
-# ifTransformSigmoid=True
-# ifFindMax=True
-# maxsize=7
 
 class Optimizer(object):
 
@@ -45,12 +31,12 @@ class Optimizer(object):
         dataset -- an n by (m+1) array that forms the matrix [X, Y]
         what is architecture
         """
-        # beim initialisieren wird nur funktion process_data() ausgeführt
+        # when initializing only process_data() is executed
         self.lossList = [torch.nn.MSELoss(), weighted_log, weighted_linear, weighted_exp]
         self.maxsize = maxsize
         self.__dataset = dataset
         self.__valset = val_set
-        self.process_data() # trained_arch_list wird eben als richtiges A und X bildet und abgespeichert
+        self.process_data() # trained_arch_list is turned into A and X and saved
         self.ifPretrain = ifPretrain
         self.ifTransformSigmoid = ifTransformSigmoid
         self.ifFindMax = ifFindMax
@@ -67,33 +53,25 @@ class Optimizer(object):
         self.__train_dataset = self.__dataset
         # __train_dataset = __dataset
 
-        # wird einfach nur initialisiert, kein train oder so wird ausgeführt
+        # just being initialized, no train
         neural_net = nn.NeuralNet(dataset=self.__train_dataset, val_dataset=self.__valset, ifPretrained=self.ifPretrain,
-                                  maxsize=self.maxsize) # oben wurde neural_net_gcn als nn importiert
-        # neural_net = nn.NeuralNet(dataset=__train_dataset, val_dataset=__valset, ifPretrained=ifPretrain, maxsize=maxsize)
-        
-        # num_epoch=num_epoch, lr=lr, selected_loss=loss, ifsigmoid=ifTransformSigmoid
-        # er führt train aus, wo GCN erstmal initialisiert wird und dann aber direkt über num_epoch trainiert wird. Das training
-        # läuft eigentl wie immer, nur dass jetzt eben adj und feat als input
+                                  maxsize=self.maxsize) # above neural_net_gcn was imported as nn
+
+        # run train(), where GCN is first initialized and trained for num_epoch. The training
+        # works as always, only now with adj and feat as input
         neural_net.train(num_epoch=self.num_epoch, lr=self.lr, selected_loss=self.loss,
                          ifsigmoid=self.ifTransformSigmoid)
-        # neural_net.train(num_epoch= num_epoch, lr= lr, selected_loss=loss, ifsigmoid= ifTransformSigmoid)
         
         self.gcn = neural_net.gcn
-        #gcn_params = []
-        #for name, param in gcn.named_parameters():
-        #    gcn_params.append(param)
-        #gcn_params[0]
-        # macht einfach nur embedding bei GCN -> also nicht final outpout vom GCN, sondern embedding output
-        # aber haben jetzt eben unser [4, 128] also concated embedding, anstatt  [4,64]
-        # den brauch ich dann nämlich 
-        train_features = self.extract_features(self.train_adj_cnn, self.train_features_cnn, self.train_adj_rhn, self.train_features_rhn) # adj_cnn, features_cnn, adj_rhn, features_rhn
-        # train_features = extract_features(gcn, train_adj_cnn, train_features_cnn, train_adj_rhn, train_features_rhn)
+        # do embedding with GCN -> i.e. not final outpout of GCN, but embedding output
+        # we now have have [4, 128] i.e. concated embedding, instead of  [4,64]
+        # which is in fact what I need
+        train_features = self.extract_features(self.train_adj_cnn, self.train_features_cnn, self.train_adj_rhn, self.train_features_rhn) 
         lm_dataset = (train_features, self.train_Y)
-        # er initalisiert erstmal mit den Daten, macht also im Endeffekt noch nichts
+        # at first initialize with data, doesn't do anything yet
         linear_regressor = lm.LinearRegressor(lm_dataset, intercept=False, ifTransformSigmoid=self.ifTransformSigmoid)
         
-        # jetzt trainiert er das initialisierte linear_regressor model
+        # now train the initialized linear_regressor model
         linear_regressor.train()
         time_ = time.time()
         print(f"train gcn time:{start - time_}")
@@ -101,7 +79,6 @@ class Optimizer(object):
     def process_data(self):
         print("processing training data")
         self.__train_dataset = self.__dataset
-        # __train_dataset = __dataset
         self.train_adj_cnn = np.array(
             [add_global_node(padzero(np.array(sample['adjacency_matrix_cnn']), True, maxsize=self.maxsize), True) for sample
              in self.__train_dataset],
@@ -113,16 +90,6 @@ class Optimizer(object):
              in self.__train_dataset],
             dtype=np.float32)
         
-        #train_adj_cnn = np.array(
-        #    [add_global_node(padzero(np.array(sample['adjacency_matrix_cnn']), True, maxsize=maxsize), True) for sample
-        #     in __train_dataset],
-        #    dtype=np.float32)
-        
-        #train_adj_rhn = np.array(
-        #    [add_global_node(padzero(np.array(sample['adjacency_matrix_rhn']), True, maxsize=maxsize), True) for sample
-        #     in __train_dataset],
-        #    dtype=np.float32)
-        
         self.train_features_cnn = np.array(
             [add_global_node(padzero(np.array(sample['operations_cnn']), False, maxsize=self.maxsize), False) for sample in
              self.__train_dataset],
@@ -132,37 +99,23 @@ class Optimizer(object):
             [add_global_node(padzero(np.array(sample['operations_rhn']), False, maxsize=self.maxsize), False) for sample in
              self.__train_dataset],
             dtype=np.float32)
-        
-        #train_features_cnn = np.array(
-        #  [add_global_node(padzero(np.array(sample['operations_cnn']), False, maxsize=maxsize), False) for sample in
-        #     __train_dataset],
-        #   dtype=np.float32)
-        
-        #train_features_rhn = np.array(
-        #  [add_global_node(padzero(np.array(sample['operations_rhn']), False, maxsize=maxsize), False) for sample in
-        #     __train_dataset],
-        #   dtype=np.float32)
-        
+
         self.train_Y = np.array([sample['metrics'] for sample in self.__train_dataset], dtype=np.float32)
     
     # update GCN with the new ovserved points
-    # wobei er einfach nur wieder train() von oben ausführt
+    # just run train() as above
     def retrain_NN(self):
         self.__train_dataset = self.__dataset
         print('len_data')
         print(len(self.__train_dataset))
-        #print('old_gcn') # vor initialisierung
-        #print(self.gcn.parameters())
         neural_net = nn.NeuralNet(dataset=self.__train_dataset, val_dataset=self.__valset, ifPretrained=self.ifPretrain,
                                   maxsize=self.maxsize)
-        #print('new_gcn') # nach initialisierung
-        #print(self.neural_net.gcn.parameters())
         neural_net.train(num_epoch=self.num_epoch, lr=self.lr, selected_loss=self.loss,
                          ifsigmoid=self.ifTransformSigmoid)
         self.gcn = neural_net.gcn
 
-    # update GCN with the new ovserved points
-    # wobei er einfach nur wieder train() von bayesian_sigmoid_regression ausführt
+    # update GCN with the new observed points
+    # just run train() of bayesian_sigmoid_regression
     def retrain_LR(self):
         """
         retrain bo regressor with updated dataset
@@ -186,14 +139,6 @@ class Optimizer(object):
             self.gcn.eval()
             embeddings = self.gcn(features_cnn, adj_cnn, features_rhn, adj_rhn, extract_embedding=True)
         return embeddings
-    
-     # def extract_features(gcn, adj_cnn, features_cnn, adj_rhn, features_rhn):
-     #   adj_cnn = torch.Tensor(adj_cnn).to(device)
-     #   features_cnn = torch.Tensor(features_cnn).to(device)
-     #   with torch.no_grad():
-     #       gcn.eval()
-     #       embeddings = gcn(features_cnn, adj_cnn, features_rhn, adj_rhn, extract_embedding=True)
-     #   return embeddings
 
     def get_ei(self, train_Y, prediction, hi_ci):
         if self.ifTransformSigmoid:
@@ -289,53 +234,30 @@ class Optimizer(object):
         return newdataset, pred_acc, select_indices
 
 
-    # new_dataset = trained_arch_list # abgespeicherte eigenschaften wie adj. matrix, accuracy, genotpyes der 100 init_samples
+    # new_dataset = trained_arch_list # saved properties like wie adj. matrix, accuracy, genotpyes of 100 init_samples
     def update_data(self, new_dataset):
         self.__dataset = new_dataset
         self.__train_dataset = self.__dataset
-        # samples = []
-        # for sample in __train_dataset:
-        #    samples.append(sample)
         
-        self.train_adj_cnn = np.array( # for-loop geht 100 mal durch trained_arch_list und gibt jedesmal 1e train_arch raus
+        self.train_adj_cnn = np.array( # for-loop iterates 100 times through trained_arch_list and always returns 1st train_arch
             [add_global_node(padzero(np.array(sample['adjacency_matrix_cnn']), True, maxsize=self.maxsize), True) for sample
              in self.__train_dataset],
             dtype=np.float32) 
-        
-        #train_adj = np.array( #
-        #    [add_global_node(padzero(np.array(sample['adjacency_matrix']), True, maxsize=maxsize), True) for sample
-        #     in __train_dataset], dtype=np.float32)
-        
         
         self.train_features_cnn = np.array(
             [add_global_node(padzero(np.array(sample['operations_cnn']), False, maxsize=self.maxsize), False) for sample in
              self.__train_dataset],
             dtype=np.float32)
         
-        #train_features = np.array(
-        #    [add_global_node(padzero(np.array(sample['operations']), False, maxsize=maxsize), False) for sample in
-        #     __train_dataset],
-        #    dtype=np.float32)
-        
         self.train_adj_rhn = np.array( # for-loop geht 100 mal durch trained_arch_list und gibt jedesmal 1e train_arch raus
             [add_global_node(padzero(np.array(sample['adjacency_matrix_rhn']), True, maxsize=self.maxsize), True) for sample
              in self.__train_dataset],
             dtype=np.float32) 
         
-        #train_adj = np.array( #
-        #    [add_global_node(padzero(np.array(sample['adjacency_matrix']), True, maxsize=maxsize), True) for sample
-        #     in __train_dataset], dtype=np.float32)
-        
-        
         self.train_features_rhn = np.array(
             [add_global_node(padzero(np.array(sample['operations_rhn']), False, maxsize=self.maxsize), False) for sample in
              self.__train_dataset],
             dtype=np.float32)
-        
-        #train_features = np.array(
-        #    [add_global_node(padzero(np.array(sample['operations']), False, maxsize=maxsize), False) for sample in
-        #     __train_dataset],
-        #    dtype=np.float32)
         
         
         self.train_Y = np.array([sample['metrics'] for sample in self.__train_dataset], dtype=np.float32)
@@ -362,8 +284,6 @@ class Optimizer(object):
         
         train_features = self.extract_features(self.train_adj_cnn, self.train_features_cnn, self.train_adj_rhn, self.train_features_rhn)
         domain_features = self.extract_features(domain_adj_cnn, domain_feature_cnn, domain_adj_rhn, domain_feature_rhn)
-        # train_features = extract_features(train_adj, train_features)
-        # domain_features = extract_features(domain_adj, domain_feature)
         lm_dataset = (train_features, self.train_Y)
         linear_regressor = lm.LinearRegressor(lm_dataset, intercept=False, ifTransformSigmoid=self.ifTransformSigmoid)
         linear_regressor.train()
