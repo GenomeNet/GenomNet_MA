@@ -34,7 +34,7 @@ def discard_cnn_edges(model, switches_normal_cnn, switches_reduce_cnn, max_edges
     switch_count_reduce = 0
     
     for i in range(len(switches_normal_cnn)): 
-        if switches_normal_cnn[i].count(False) != len(switches_normal_cnn[i]): # if they are not all false -> don't discarded edge
+        if switches_normal_cnn[i].count(False) != len(switches_normal_cnn[i]): # if they are not all false -> this is not a discarded edge
             if switches_normal_cnn[i][0] ==True:
                 nor_arch[i-switch_count_normal][0] = 0
             final_prob_normal[i] = max(nor_arch[i-switch_count_normal]) # add best/max operation to final_prob 
@@ -132,7 +132,7 @@ def discard_rhn_edges(model, switches_rnn, max_edges_rhn, sp):
 
     for i in range(len(switches_rnn)): 
         # i=0
-        if switches_rnn[i].count(False) != len(switches_rnn[i]): # if not all false -> don't discarded edge
+        if switches_rnn[i].count(False) != len(switches_rnn[i]): # if not all false -> this is not a discarded edge
             if switches_rnn[i][0] == True: # set zero operation to zero
                 arch_rhn[i-switch_count_rnn][0] = 0
             
